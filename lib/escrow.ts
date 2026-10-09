@@ -1,7 +1,7 @@
 // Escrow state machine on top of PayPal. Every money movement goes through
 // here so the AI agent (week 2+) and the UI share the same guardrails.
 import * as paypal from "./paypal";
-import { getMilestone, logEvent, updateMilestone, type Milestone } from "./store";
+import { getMilestone, getProject, logEvent, updateMilestone, type Milestone, type Project } from "./store";
 
 const FEE_PERCENT = Number(process.env.PLATFORM_FEE_PERCENT ?? 5);
 
@@ -32,6 +32,12 @@ async function mustGet(id: string): Promise<Milestone> {
   return m;
 }
 
+async function projectOf(m: Milestone): Promise<Project> {
+  const p = await getProject(m.projectId);
+  if (!p) throw new EscrowError(`Project ${m.projectId} not found`, 404);
+  return p;
+}
+
 export function platformFee(amountCents: number): number {
   return Math.round((amountCents * FEE_PERCENT) / 100);
 }
@@ -40,12 +46,14 @@ export function platformFee(amountCents: number): number {
 export function startFunding(id: string, urls?: { returnUrl: string; cancelUrl: string }) {
   return withLock(id, async () => {
     const m = await mustGet(id);
+    const project = await projectOf(m);
+    if (project.status !== "active") throw new EscrowError("Both parties must approve the plan before milestones can be funded");
     if (m.status !== "draft" && m.status !== "awaiting_funding") {
       throw new EscrowError(`Milestone ${id} cannot be funded in status ${m.status}`);
     }
     const order = await paypal.createOrder({
       referenceId: m.id,
-      description: `${m.projectTitle}: ${m.title}`,
+      description: `${project.title}: ${m.title}`,
       amountCents: m.amountCents,
       currency: m.currency,
       ...urls,
@@ -93,8 +101,9 @@ export function settle(id: string, freelancerShareCents: number, reason: string)
     if (!Number.isInteger(freelancerShareCents) || freelancerShareCents < 0 || freelancerShareCents > m.amountCents) {
       throw new EscrowError(`Freelancer share must be between 0 and ${m.amountCents} cents`);
     }
-    if (freelancerShareCents > 0 && !m.freelancerEmail) {
-      throw new EscrowError("No freelancer PayPal email configured (FREELANCER_PAYPAL_EMAIL)");
+    const project = await projectOf(m);
+    if (freelancerShareCents > 0 && !project.freelancerEmail) {
+      throw new EscrowError("The project has no freelancer PayPal email");
     }
 
     const refundCents = m.amountCents - freelancerShareCents;
@@ -105,10 +114,10 @@ export function settle(id: string, freelancerShareCents: number, reason: string)
       const payoutCents = freelancerShareCents - feeCents;
       const batch = await paypal.createPayout({
         senderBatchId: `ms-${m.id}-${m.captureId}`,
-        receiverEmail: m.freelancerEmail,
+        receiverEmail: project.freelancerEmail,
         amountCents: payoutCents,
         currency: m.currency,
-        note: `Payment for "${m.title}" (${m.projectTitle}). ${reason}`.slice(0, 255),
+        note: `Payment for "${m.title}" (${project.title}). ${reason}`.slice(0, 255),
       });
       await updateMilestone(id, (x) => {
         x.payout = { batchId: batch.batch_header.payout_batch_id, amountCents: payoutCents, feeCents, status: batch.batch_header.batch_status };
