@@ -25,7 +25,7 @@ const STATUS_LABEL: Record<Milestone["status"], string> = {
 const HELD = new Set<Milestone["status"]>(["funded", "changes_requested", "needs_review", "verified", "disputed"]);
 
 /** A milestone of an agreed project: fund, deliver, AI review, then release, split or refund. */
-export type TeamInfo = { providerName: string; isMine: boolean; after: string[] };
+export type TeamInfo = { providerName: string; isMine: boolean; after: string[]; droppedOut?: boolean };
 
 export function MilestoneCard({
   m,
@@ -68,6 +68,9 @@ export function MilestoneCard({
           {team.after.length > 0 && <span className="small muted">after {team.after.join(", ")}</span>}
           {team.isMine && <span className="small mine">your milestone</span>}
         </p>
+      )}
+      {team?.droppedOut && fundable === false && m.status === "funded" && (
+        <div className="notice warn">{team.providerName} dropped out. The money stays in escrow; see the new plan at the top of the page.</div>
       )}
 
       {latest?.verification && m.status !== "in_review" ? (

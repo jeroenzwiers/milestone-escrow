@@ -5,7 +5,7 @@
 import { betaZodOutputFormat, betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { issueTeamAccess } from "./access";
-import { AiError, anthropic, MODEL } from "./ai";
+import { AiError, anthropic, FAST_MODEL, MODEL } from "./ai";
 import { EscrowError } from "./escrow";
 import { checkPlan, executionOrder, type PlanProposal } from "./plan";
 import { getProvider, PROVIDERS, type Provider } from "./providers";
@@ -39,11 +39,10 @@ export async function askProvider(provider: Provider, request: { goal: Goal; sco
   const ask = request.counter
     ? `Counter-offer for the same job. Scope: ${request.scope}\nProposed price: ${euros(request.counter.priceCents)}\nReason: ${request.counter.reason}\nYour previous offer was ${euros(request.counter.previous.priceCents)}.`
     : `Request for an offer. Scope: ${request.scope}`;
+  // Provider agents answer one well-scoped question each, so a fast, cheaper model is enough.
   const response = await anthropic().beta.messages.parse({
-    model: MODEL,
+    model: FAST_MODEL,
     max_tokens: 4000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
     output_config: { effort: "low", format: betaZodOutputFormat(OfferReply) },
     system: providerSystem(provider),
     messages: [

@@ -74,6 +74,12 @@ export default function ProjectPage() {
     } catch {}
   }
 
+  // When the agents start (re)planning or a new plan version arrives, bring it into view.
+  const activity = project?.plan?.state === "planning" ? "planning" : project?.plan?.pending ? `pending-${project.plan.pending.version}` : null;
+  useEffect(() => {
+    if (activity) document.getElementById("plan-activity")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [activity]);
+
   // Follow the agents, the AI review and the challenge-window countdown without reloading.
   const live =
     project?.plan?.state === "planning" ||
@@ -175,6 +181,7 @@ export default function ProjectPage() {
 
       {isTeam && <GoalCard project={project} />}
 
+      <div id="plan-activity" />
       {isTeam && project.plan?.state === "planning" && (
         <section className="card">
           <NegotiationTrace trace={project.status === "active" ? project.plan.trace.slice(project.plan.trace.map((t) => t.tool).lastIndexOf("dropout")) : project.plan.trace} live />
@@ -247,7 +254,16 @@ export default function ProjectPage() {
             run={(fn) => run(m.id, fn)}
             onError={setError}
             onChanged={refresh}
-            team={isTeam ? { providerName: providerName(m.providerId), isMine: m.providerId === myProviderId, after: (m.dependsOn ?? []).map((d) => milestones.find((x) => x.id === d)?.title ?? d) } : undefined}
+            team={
+              isTeam
+                ? {
+                    providerName: providerName(m.providerId),
+                    isMine: m.providerId === myProviderId,
+                    after: (m.dependsOn ?? []).map((d) => milestones.find((x) => x.id === d)?.title ?? d),
+                    droppedOut: !!m.providerId && !!project.plan?.unavailable.includes(m.providerId),
+                  }
+                : undefined
+            }
           />
         ))}
 

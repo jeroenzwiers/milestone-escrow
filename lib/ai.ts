@@ -4,6 +4,8 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 
 export const MODEL = "claude-opus-5-5";
+// Cheaper model for simple, high-volume calls such as the demo provider agents.
+export const FAST_MODEL = process.env.FAST_MODEL || "claude-haiku-5-5";
 
 let client: Anthropic | null = null;
 export function anthropic(): Anthropic {
