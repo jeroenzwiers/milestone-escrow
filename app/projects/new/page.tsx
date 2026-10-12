@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { api } from "@/lib/client";
-import type { ProjectWithMilestones } from "@/lib/store";
+import { api, saveInvite, saveToken } from "@/lib/client";
+import type { Role } from "@/lib/store";
 
 const EXAMPLE = `Hi Sanne,
 
@@ -25,6 +25,7 @@ export default function NewProject() {
   const router = useRouter();
   const [agreement, setAgreement] = useState("");
   const [freelancerEmail, setFreelancerEmail] = useState("");
+  const [me, setMe] = useState<Role>("client");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,8 +34,12 @@ export default function NewProject() {
     setBusy(true);
     setError(null);
     try {
-      const project = await api<ProjectWithMilestones>("/api/projects", "POST", { agreement, freelancerEmail });
-      router.push(`/projects/${project.id}`);
+      const { projectId, tokens } = await api<{ projectId: string; tokens: Record<Role, string> }>("/api/projects", "POST", { agreement, freelancerEmail });
+      // Keep only your own link; the other party's link is shown once so you can send it on.
+      const other: Role = me === "client" ? "freelancer" : "client";
+      saveToken(projectId, me, tokens[me]);
+      saveInvite(projectId, { role: other, token: tokens[other] });
+      router.push(`/projects/${projectId}`);
     } catch (err) {
       setError((err as Error).message);
       setBusy(false);
@@ -64,6 +69,15 @@ export default function NewProject() {
           </button>
         </div>
         <textarea id="agreement" rows={14} value={agreement} onChange={(e) => setAgreement(e.target.value)} placeholder="Paste the quote, email or proposal here…" disabled={busy} required />
+
+        <label>I am the</label>
+        <div className="role-pick">
+          {(["client", "freelancer"] as const).map((r) => (
+            <label key={r}>
+              <input type="radio" name="me" value={r} checked={me === r} onChange={() => setMe(r)} disabled={busy} /> {r === "client" ? "Client (I pay)" : "Freelancer (I deliver)"}
+            </label>
+          ))}
+        </div>
 
         <label htmlFor="email">Freelancer&apos;s PayPal email</label>
         <input id="email" type="email" value={freelancerEmail} onChange={(e) => setFreelancerEmail(e.target.value)} placeholder="Leave empty to use the sandbox freelancer account" disabled={busy} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, money } from "@/lib/client";
+import { api, fileUrl, money } from "@/lib/client";
 import type { AuditEvent, Milestone, Role, Submission } from "@/lib/store";
 import { MediationPanel } from "./MediationPanel";
 import { PayPalButton } from "./PayPalButton";
@@ -115,8 +115,8 @@ function SubmissionSummary({ s, count }: { s: Submission; count: number }) {
       {s.files.length > 0 && (
         <div className="thumbs">
           {s.files.map((f) => (
-            <a key={f.path} href={`/api/files?path=${encodeURIComponent(f.path)}`} target="_blank" rel="noreferrer">
-              {f.mediaType.startsWith("image/") ? <img src={`/api/files?path=${encodeURIComponent(f.path)}`} alt={f.name} /> : <span className="file">{f.name}</span>}
+            <a key={f.path} href={fileUrl(f.path)} target="_blank" rel="noreferrer">
+              {f.mediaType.startsWith("image/") ? <img src={fileUrl(f.path)} alt={f.name} /> : <span className="file">{f.name}</span>}
             </a>
           ))}
         </div>
@@ -172,7 +172,7 @@ function ChallengeWindow({ m, role, busy, run }: { m: Milestone; role: Role; bus
         <div>
           <textarea rows={3} placeholder="What's wrong with the delivery?" value={reason} onChange={(e) => setReason(e.target.value)} />
           <div className="actions">
-            <button className="danger" disabled={busy || !reason.trim()} onClick={() => run(() => api(`/api/milestones/${m.id}/dispute`, "POST", { role: "client", reason }))}>
+            <button className="danger" disabled={busy || !reason.trim()} onClick={() => run(() => api(`/api/milestones/${m.id}/dispute`, "POST", { reason }))}>
               Stop release and object
             </button>
             <button onClick={() => setObjecting(false)}>Cancel</button>
@@ -197,7 +197,7 @@ function ContestVerdict({ m, busy, run }: { m: Milestone; busy: boolean; run: (f
     <div className="decision">
       <textarea rows={3} placeholder="Why does your delivery meet the agreement?" value={reason} onChange={(e) => setReason(e.target.value)} />
       <div className="actions">
-        <button className="danger" disabled={busy || !reason.trim()} onClick={() => run(() => api(`/api/milestones/${m.id}/dispute`, "POST", { role: "freelancer", reason }))}>
+        <button className="danger" disabled={busy || !reason.trim()} onClick={() => run(() => api(`/api/milestones/${m.id}/dispute`, "POST", { reason }))}>
           Open dispute
         </button>
         <button onClick={() => setOpen(false)}>Cancel</button>

@@ -35,7 +35,7 @@ export function MediationPanel({ m, role, busy, run }: { m: Milestone; role: Rol
           <label htmlFor={`stmt-${m.id}`}>Your side of the story ({role})</label>
           <textarea id={`stmt-${m.id}`} rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder={role === "client" ? "What is missing or wrong in the delivery?" : "Why do you think the work meets the agreement?"} />
           <div className="actions">
-            <button className="primary" disabled={busy || !text.trim()} onClick={async () => (await run(() => api(`/api/milestones/${m.id}/statement`, "POST", { role, text }))) && setEditing(false)}>
+            <button className="primary" disabled={busy || !text.trim()} onClick={async () => (await run(() => api(`/api/milestones/${m.id}/statement`, "POST", { text }))) && setEditing(false)}>
               Save statement
             </button>
             {mine && <button onClick={() => setEditing(false)}>Cancel</button>}
@@ -82,7 +82,7 @@ export function MediationPanel({ m, role, busy, run }: { m: Milestone; role: Rol
               p.acceptedBy[r] ? (
                 <span key={r} className="approved">✓ {r} accepted</span>
               ) : r === role ? (
-                <button key={r} className="primary" disabled={busy} onClick={() => run(() => api(`/api/milestones/${m.id}/accept`, "POST", { role, proposalAt: p.at }))}>
+                <button key={r} className="primary" disabled={busy} onClick={() => run(() => api(`/api/milestones/${m.id}/accept`, "POST", { proposalAt: p.at }))}>
                   Accept proposal
                 </button>
               ) : (

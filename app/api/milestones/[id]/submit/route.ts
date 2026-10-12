@@ -1,3 +1,4 @@
+import { authorizeMilestone } from "@/lib/access";
 import { handle, type RouteContext } from "@/lib/api";
 import { submitWork } from "@/lib/delivery";
 
@@ -5,6 +6,7 @@ import { submitWork } from "@/lib/delivery";
 export function POST(req: Request, { params }: RouteContext) {
   return handle(async () => {
     const { id } = await params;
+    await authorizeMilestone(req, id, ["freelancer"]);
     const form = await req.formData();
     return submitWork(id, {
       note: String(form.get("note") ?? ""),

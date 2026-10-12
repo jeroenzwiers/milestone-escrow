@@ -32,6 +32,8 @@ export type Project = {
   // "proposed" until both parties approve the plan; only then can milestones be funded.
   status: "proposed" | "active";
   approvals: Record<Role, boolean>;
+  // SHA-256 hashes of each party's secret link token (see lib/access.ts).
+  access?: Record<Role, string>;
   agreement: string;
   issues: Issue[];
   createdAt: string;
@@ -110,19 +112,16 @@ export type ProjectWithMilestones = Project & { milestones: Milestone[] };
 
 const DB_FILE = path.join(process.env.DATA_DIR ?? path.join(process.cwd(), "data"), "db.json");
 
-type Db = { projects: Project[]; milestones: Milestone[] };
+export type Db = { projects: Project[]; milestones: Milestone[] };
 
 async function load(): Promise<Db> {
   try {
     const db = JSON.parse(await fs.readFile(DB_FILE, "utf8"));
     if (Array.isArray(db.projects)) return db;
-    // Week-1 file without projects: start over with the seeded scenario.
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
   }
-  const db = seed();
-  await save(db);
-  return db;
+  return { projects: [], milestones: [] };
 }
 
 async function save(db: Db) {
@@ -199,8 +198,14 @@ export function updateMilestone(id: string, fn: (m: Milestone) => void): Promise
   });
 }
 
+/** Replace all data with the demo scenario under fixed ids. Used by tests. */
 export function resetStore(): Promise<void> {
-  return exclusive(() => save(seed()));
+  return exclusive(() => save(demoScenario("p_bakery", ["m1", "m2", "m3"])));
+}
+
+/** A fresh copy of the demo scenario with its own ids, e.g. one per visitor. */
+export function newDemoScenario(): Db {
+  return demoScenario(newId("p"), [newId("m"), newId("m"), newId("m")]);
 }
 
 export function logEvent(target: { events: AuditEvent[] }, type: string, detail?: string) {
@@ -208,10 +213,9 @@ export function logEvent(target: { events: AuditEvent[] }, type: string, detail?
 }
 
 // Demo scenario: a bakery hires a freelance developer for a webshop; plan already agreed.
-function seed(): Db {
+function demoScenario(projectId: string, [m1, m2, m3]: string[]): Db {
   const currency = process.env.CURRENCY ?? "EUR";
   const freelancerEmail = process.env.FREELANCER_PAYPAL_EMAIL ?? "";
-  const projectId = "p_bakery";
   const project: Project = {
     id: projectId,
     title: "Webshop for Bakery De Gouden Korst",
@@ -223,8 +227,8 @@ function seed(): Db {
     approvals: { client: true, freelancer: true },
     agreement: "",
     issues: [],
-    createdAt: "2026-10-01T09:00:00.000Z",
-    events: [{ at: "2026-10-01T09:00:00.000Z", type: "plan_agreed", detail: "Seeded demo project" }],
+    createdAt: new Date().toISOString(),
+    events: [{ at: new Date().toISOString(), type: "plan_agreed", detail: "Demo project" }],
   };
   const base = { projectId, currency, status: "draft" as const, dueDate: null, events: [] };
   return {
@@ -232,7 +236,7 @@ function seed(): Db {
     milestones: [
       {
         ...base,
-        id: "m1",
+        id: m1,
         title: "Design & product catalogue",
         amountCents: 40000,
         criteria: [
@@ -244,7 +248,7 @@ function seed(): Db {
       },
       {
         ...base,
-        id: "m2",
+        id: m2,
         title: "Ordering & checkout with PayPal",
         amountCents: 60000,
         criteria: [
@@ -256,7 +260,7 @@ function seed(): Db {
       },
       {
         ...base,
-        id: "m3",
+        id: m3,
         title: "Launch & handover",
         amountCents: 20000,
         criteria: [

@@ -1,22 +1,27 @@
+import { authorizeProject } from "@/lib/access";
 import { handle, type RouteContext } from "@/lib/api";
 import { processDue } from "@/lib/delivery";
-import { EscrowError, refreshPayout } from "@/lib/escrow";
+import { refreshPayout } from "@/lib/escrow";
 import { getProject } from "@/lib/store";
-
-const PENDING_PAYOUT = new Set(["PENDING", "PROCESSING"]);
 
 export const dynamic = "force-dynamic";
 
-export function GET(_req: Request, { params }: RouteContext) {
+const PENDING_PAYOUT = new Set(["PENDING", "PROCESSING"]);
+
+// Returns the project plus the caller's role, as derived from their link.
+export function GET(req: Request, { params }: RouteContext) {
   return handle(async () => {
     const { id } = await params;
+    const { role } = await authorizeProject(req, id);
     await processDue();
-    const project = await getProject(id);
-    if (!project) throw new EscrowError("Project not found", 404);
+    let project = (await getProject(id))!;
     // Webhooks can't reach a local dev server; poll payouts that are still in flight.
     const pending = project.milestones.filter((m) => m.payout && PENDING_PAYOUT.has(m.payout.status));
-    if (pending.length === 0) return project;
-    await Promise.all(pending.map((m) => refreshPayout(m.id).catch(() => {})));
-    return getProject(id);
+    if (pending.length > 0) {
+      await Promise.all(pending.map((m) => refreshPayout(m.id).catch(() => {})));
+      project = (await getProject(id))!;
+    }
+    const { access: _hashes, ...visible } = project;
+    return { ...visible, viewerRole: role };
   });
 }

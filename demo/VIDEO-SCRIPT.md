@@ -24,9 +24,9 @@
 
 ## 2. Afspraak → mijlpalen (0:15–0:40)
 
-**Beeld:** *New project from agreement* → *Use example* → *Draft milestone plan*. **Knip** de wachttijd (±15 s) weg. Scroll langs "Check before you approve" en de criteria van mijlpaal 1. Klik *Approve as client* en *Approve as freelancer*.
+**Beeld:** *New project from agreement* → *Use example*, laat "I am the: Client" staan → *Draft milestone plan*. **Knip** de wachttijd (±15 s) weg. Laat kort het paneel met de persoonlijke link voor de freelancer zien en klik *Demo: also act as the freelancer in this browser*. Scroll langs "Check before you approve" en de criteria van mijlpaal 1. Klik *Approve as client*, schakel naar **Freelancer** en klik *Approve as freelancer*.
 
-> Daan sends Sanne his quote by email. Paste it in, and Claude turns it into milestones, with amounts and acceptance criteria that can actually be checked. "Works well on phones" becomes "no horizontal scrolling, products in a readable grid". It also flags what's missing, like deadlines. Both sides approve the same plan, and only then can money move.
+> Daan sends Sanne his quote by email. Paste it in, and Claude turns it into milestones, with amounts and acceptance criteria that can actually be checked. "Works well on phones" becomes "no horizontal scrolling, products in a readable grid". It also flags what's missing, like deadlines. Each side gets a personal link, both approve the same plan, and only then can money move.
 
 ## 3. Geld vast met PayPal (0:40–1:00)
 
@@ -67,7 +67,7 @@ Klik *Submit for review*. Laat de live trace een paar seconden zien ("Opened pul
 ## Voorbereiding
 
 - [ ] `CHALLENGE_WINDOW_MINUTES=1` in `.env.local` en de server herstarten (een korte aftelklok ziet er beter uit in beeld).
-- [ ] **Demo resetten** op de homepage, en vooraf een volledige proefrun doen. De AI kan per run iets anders formuleren. Check vooral dat mijlpaal 1 wordt goedgekeurd met de criteria die *jouw* gegenereerde plan oplevert; zo niet, pas het criterium aan met *Edit* vóór het goedkeuren.
+- [ ] Vooraf een volledige proefrun doen in een apart projectje (de opname zelf begint met een nieuw project). De AI kan per run iets anders formuleren. Check vooral dat mijlpaal 1 wordt goedgekeurd met de criteria die *jouw* gegenereerde plan oplevert; zo niet, pas het criterium aan met *Edit* vóór het goedkeuren.
 - [ ] Mijlpaal 2 vóór de opname al betalen, zodat scène 5 direct kan beginnen.
 - [ ] Ingelogd in het PayPal-sandbox-klantaccount (wachtwoord bij de hand).
 - [ ] Browser: andere tabbladen en bladwijzerbalk weg, zoom op 110–125%, venster ±1280×800.

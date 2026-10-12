@@ -4,21 +4,72 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AuditLog, Criteria, MilestoneCard } from "@/components/MilestoneCard";
-import { api, money, sumCents } from "@/lib/client";
+import { api, linkFor, loadInvite, loadTokens, money, saveInvite, saveToken, setActiveToken, sumCents, type Invite, type Tokens } from "@/lib/client";
 import type { Milestone, ProjectWithMilestones, Role } from "@/lib/store";
+
+type ProjectView = ProjectWithMilestones & { viewerRole: Role };
+
+const rolePrefKey = (id: string) => `escrow:role:${id}`;
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
-  const [project, setProject] = useState<ProjectWithMilestones | null>(null);
+  const [project, setProject] = useState<ProjectView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [tokens, setTokens] = useState<Tokens | null>(null); // null until read from this browser
+  const [role, setRole] = useState<Role | null>(null);
+  const [invite, setInvite] = useState<Invite | null>(null);
 
-  const [role, setRole] = useRole();
+  // Arriving via a personal link (?t=…): check it with the server, keep it, and drop it from the URL.
+  useEffect(() => {
+    (async () => {
+      const url = new URL(window.location.href);
+      const t = url.searchParams.get("t");
+      let fromLink: Role | null = null;
+      if (t) {
+        url.searchParams.delete("t");
+        window.history.replaceState(null, "", url.pathname + url.search);
+        try {
+          fromLink = (await api<ProjectView>(`/api/projects/${id}`, "GET", undefined, t)).viewerRole;
+          saveToken(id, fromLink, t);
+        } catch (e) {
+          setError((e as Error).message);
+        }
+      }
+      const saved = loadTokens(id);
+      let pref: string | null = null;
+      try {
+        pref = localStorage.getItem(rolePrefKey(id));
+      } catch {}
+      const preferred = pref === "client" || pref === "freelancer" ? (saved[pref] ? pref : null) : null;
+      setTokens(saved);
+      setInvite(loadInvite(id));
+      setRole(fromLink ?? preferred ?? (saved.client ? "client" : saved.freelancer ? "freelancer" : null));
+    })();
+  }, [id]);
 
-  const refresh = useCallback(() => api<ProjectWithMilestones>(`/api/projects/${id}`).then(setProject).catch((e) => setError(e.message)), [id]);
+  const token = role && tokens ? (tokens[role] ?? null) : null;
+  // Every API call from this page (and its components) acts as the selected party.
+  setActiveToken(token);
+
+  const refresh = useCallback(async () => {
+    if (!token) return;
+    try {
+      setProject(await api<ProjectView>(`/api/projects/${id}`, "GET", undefined, token));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, [id, token]);
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  function switchRole(r: Role) {
+    setRole(r);
+    try {
+      localStorage.setItem(rolePrefKey(id), r);
+    } catch {}
+  }
 
   // Follow the AI review and the challenge-window countdown without reloading.
   const live = project?.milestones.some((m) => m.status === "in_review" || m.status === "verified" || m.payout?.status === "PENDING");
@@ -43,7 +94,20 @@ export default function ProjectPage() {
     }
   }
 
-  if (!project) {
+  if (tokens && !token) {
+    return (
+      <main>
+        <Link href="/" className="back">← Projects</Link>
+        {error && <div className="error">{error}</div>}
+        <section className="card">
+          <h2>You need your personal link</h2>
+          <p className="muted">Each party opens a project with the private link they received when it was created. Ask the person who created the project to send you yours.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!project || !role) {
     return (
       <main>
         <Link href="/" className="back">← Projects</Link>
@@ -54,6 +118,7 @@ export default function ProjectPage() {
 
   const { currency, milestones } = project;
   const total = sumCents(milestones);
+  const heldStatuses: Milestone["status"][] = ["funded", "in_review", "changes_requested", "needs_review", "verified", "disputed"];
 
   return (
     <main>
@@ -63,12 +128,12 @@ export default function ProjectPage() {
           <p className="eyebrow">{[project.clientName, project.freelancerName].filter(Boolean).join(" → ") || "Project"}</p>
           <h1>{project.title}</h1>
         </div>
-        <RoleSwitch role={role} onChange={setRole} />
+        <RoleSwitch role={role} available={tokens ?? {}} onChange={switchRole} />
         <div className="totals">
           <div><span className="muted small">Total</span><strong>{money(total, currency)}</strong></div>
           {project.status === "active" && (
             <>
-              <div><span className="muted small">Held in escrow</span><strong>{money(sumCents(milestones, (m) => m.status === "funded"), currency)}</strong></div>
+              <div><span className="muted small">Held in escrow</span><strong>{money(sumCents(milestones, (m) => heldStatuses.includes(m.status)), currency)}</strong></div>
               <div><span className="muted small">Settled</span><strong>{money(sumCents(milestones, (m) => ["released", "split", "refunded"].includes(m.status)), currency)}</strong></div>
             </>
           )}
@@ -77,9 +142,26 @@ export default function ProjectPage() {
 
       {error && <div className="error">{error}</div>}
 
+      {invite && (
+        <InvitePanel
+          projectId={id}
+          invite={invite}
+          onOpenHere={() => {
+            saveToken(id, invite.role, invite.token);
+            saveInvite(id, null);
+            setTokens(loadTokens(id));
+            setInvite(null);
+          }}
+          onDone={() => {
+            saveInvite(id, null);
+            setInvite(null);
+          }}
+        />
+      )}
+
       {project.status === "proposed" ? (
         <>
-          <ApprovalBar project={project} busy={busy !== null} onApprove={(role) => run(`approve-${role}`, () => api(`/api/projects/${id}/approve`, "POST", { role }))} />
+          <ApprovalBar project={project} role={role} busy={busy !== null} onApprove={() => run(`approve-${role}`, () => api(`/api/projects/${id}/approve`, "POST"))} />
           <Issues project={project} />
           {milestones.map((m, i) => (
             <DraftMilestone key={m.id} m={m} index={i} busy={busy === m.id} onSave={(edit) => run(m.id, () => api(`/api/projects/${id}/milestones/${m.id}`, "PATCH", edit))} />
@@ -102,31 +184,20 @@ export default function ProjectPage() {
   );
 }
 
-// Demo convenience: one browser plays both parties. Remembered per browser.
-function useRole(): [Role, (r: Role) => void] {
-  const [role, setRole] = useState<Role>("client");
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("role");
-      if (saved === "client" || saved === "freelancer") setRole(saved);
-    } catch {}
-  }, []);
-  return [
-    role,
-    (r) => {
-      setRole(r);
-      try {
-        localStorage.setItem("role", r);
-      } catch {}
-    },
-  ];
-}
-
-function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
+/** Switch between parties only when this browser holds both links (the demo). */
+function RoleSwitch({ role, available, onChange }: { role: Role; available: Tokens; onChange: (r: Role) => void }) {
+  const roles = (["client", "freelancer"] as const).filter((r) => available[r]);
+  if (roles.length < 2) {
+    return (
+      <span className="role-badge">
+        You are the <strong>{role}</strong>
+      </span>
+    );
+  }
   return (
-    <div className="role-switch" role="group" aria-label="Viewing as">
-      <span className="muted small">Viewing as</span>
-      {(["client", "freelancer"] as const).map((r) => (
+    <div className="role-switch" role="group" aria-label="Acting as">
+      <span className="muted small">Acting as</span>
+      {roles.map((r) => (
         <button key={r} className={role === r ? "active" : ""} onClick={() => onChange(r)} aria-pressed={role === r}>
           {r === "client" ? "Client" : "Freelancer"}
         </button>
@@ -135,7 +206,39 @@ function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role) => voi
   );
 }
 
-function ApprovalBar({ project, busy, onApprove }: { project: ProjectWithMilestones; busy: boolean; onApprove: (role: Role) => void }) {
+function InvitePanel({ projectId, invite, onOpenHere, onDone }: { projectId: string; invite: Invite; onOpenHere: () => void; onDone: () => void }) {
+  const link = linkFor(projectId, invite.token);
+  const [copied, setCopied] = useState(false);
+  return (
+    <section className="card invite">
+      <h2>Send the {invite.role} their personal link</h2>
+      <p className="small muted">
+        Anyone with this link acts as the {invite.role} on this project, so send it only to them. It is shown here once and is not stored on the server.
+      </p>
+      <div className="link-row">
+        <input type="text" readOnly value={link} onFocus={(e) => e.currentTarget.select()} aria-label={`Link for the ${invite.role}`} />
+        <button
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(link);
+              setCopied(true);
+            } catch {}
+          }}
+        >
+          {copied ? "Copied ✓" : "Copy"}
+        </button>
+      </div>
+      <div className="actions">
+        <button className="primary" onClick={onDone}>
+          I have sent it
+        </button>
+        <button onClick={onOpenHere}>Demo: also act as the {invite.role} in this browser</button>
+      </div>
+    </section>
+  );
+}
+
+function ApprovalBar({ project, role, busy, onApprove }: { project: ProjectWithMilestones; role: Role; busy: boolean; onApprove: () => void }) {
   const parties: { role: Role; label: string }[] = [
     { role: "client", label: project.clientName ?? "Client" },
     { role: "freelancer", label: project.freelancerName ?? "Freelancer" },
@@ -147,13 +250,19 @@ function ApprovalBar({ project, busy, onApprove }: { project: ProjectWithMilesto
         <p className="small muted">Milestones can be funded once both parties approve this exact version. Any edit resets both approvals.</p>
       </div>
       <div className="parties">
-        {parties.map(({ role, label }) =>
-          project.approvals[role] ? (
-            <span key={role} className="approved">✓ {label} approved</span>
-          ) : (
-            <button key={role} className="primary" disabled={busy} onClick={() => onApprove(role)}>
-              Approve as {role}
+        {parties.map((p) =>
+          project.approvals[p.role] ? (
+            <span key={p.role} className="approved">
+              ✓ {p.label} approved
+            </span>
+          ) : p.role === role ? (
+            <button key={p.role} className="primary" disabled={busy} onClick={onApprove}>
+              Approve as {p.role}
             </button>
+          ) : (
+            <span key={p.role} className="pending">
+              Waiting for the {p.role}
+            </span>
           ),
         )}
       </div>

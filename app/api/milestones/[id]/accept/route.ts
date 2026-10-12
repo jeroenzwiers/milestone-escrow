@@ -1,13 +1,13 @@
+import { authorizeMilestone } from "@/lib/access";
 import { handle, type RouteContext } from "@/lib/api";
-import { EscrowError } from "@/lib/escrow";
 import { acceptProposal } from "@/lib/mediation";
 
-// Body: { role: "client" | "freelancer", proposalAt: string }
+// Body: { proposalAt: string }. The accepting party is the holder of the link.
 export function POST(req: Request, { params }: RouteContext) {
   return handle(async () => {
     const { id } = await params;
-    const { role, proposalAt } = await req.json().catch(() => ({}));
-    if (role !== "client" && role !== "freelancer") throw new EscrowError("role must be client or freelancer");
+    const { role } = await authorizeMilestone(req, id);
+    const { proposalAt } = await req.json().catch(() => ({}));
     return acceptProposal(id, role, String(proposalAt ?? ""));
   });
 }

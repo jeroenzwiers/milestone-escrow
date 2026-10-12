@@ -1,3 +1,4 @@
+import { authorizeMilestone } from "@/lib/access";
 import { handle, type RouteContext } from "@/lib/api";
 import { EscrowError, settle } from "@/lib/escrow";
 import { getMilestone } from "@/lib/store";
@@ -6,6 +7,7 @@ import { getMilestone } from "@/lib/store";
 export function POST(req: Request, { params }: RouteContext) {
   return handle(async () => {
     const { id } = await params;
+    await authorizeMilestone(req, id, ["client"]);
     const body = await req.json().catch(() => ({}));
     const m = await getMilestone(id);
     if (!m) throw new EscrowError(`Milestone ${id} not found`, 404);

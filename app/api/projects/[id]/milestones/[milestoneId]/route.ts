@@ -1,12 +1,14 @@
+import { authorizeProject } from "@/lib/access";
 import { handle } from "@/lib/api";
 import { editMilestone, type MilestoneEdit } from "@/lib/projects";
 
 type Context = { params: Promise<{ id: string; milestoneId: string }> };
 
-// Body: any of { title, amountCents, criteria, evidence, dueDate }. Only while the plan is proposed.
+// Body: any of { title, amountCents, criteria, evidence, dueDate }. Either party, only while the plan is proposed.
 export function PATCH(req: Request, { params }: Context) {
   return handle(async () => {
     const { id, milestoneId } = await params;
+    await authorizeProject(req, id);
     const body = await req.json().catch(() => ({}));
     const edit: MilestoneEdit = {
       title: typeof body.title === "string" ? body.title : undefined,

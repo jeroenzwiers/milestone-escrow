@@ -1,25 +1,45 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, money, sumCents } from "@/lib/client";
+import { api, forgetProject, loadTokens, money, myProjectIds, saveToken, sumCents } from "@/lib/client";
 import type { ProjectWithMilestones } from "@/lib/store";
 
 export default function Home() {
+  const router = useRouter();
   const [projects, setProjects] = useState<ProjectWithMilestones[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
 
-  const load = () => api<ProjectWithMilestones[]>("/api/projects").then(setProjects).catch((e) => setError(e.message));
   useEffect(() => {
-    load();
+    // Only projects this browser has a link for; there is no global list.
+    Promise.all(
+      myProjectIds().map(async (id) => {
+        const tokens = loadTokens(id);
+        try {
+          return await api<ProjectWithMilestones>(`/api/projects/${id}`, "GET", undefined, tokens.client ?? tokens.freelancer);
+        } catch {
+          forgetProject(id); // link no longer valid (e.g. the demo data was cleared)
+          return null;
+        }
+      }),
+    )
+      .then((list) => setProjects(list.filter((p): p is ProjectWithMilestones => p !== null).sort((a, b) => b.createdAt.localeCompare(a.createdAt))))
+      .catch((e) => setError(e.message));
   }, []);
 
-  async function reset() {
+  async function startDemo() {
+    setStarting(true);
     setError(null);
     try {
-      setProjects(await api<ProjectWithMilestones[]>("/api/demo/reset", "POST"));
+      const { projectId, tokens } = await api<{ projectId: string; tokens: { client: string; freelancer: string } }>("/api/demo/start", "POST");
+      saveToken(projectId, "client", tokens.client);
+      saveToken(projectId, "freelancer", tokens.freelancer);
+      router.push(`/projects/${projectId}`);
     } catch (e) {
       setError((e as Error).message);
+      setStarting(false);
     }
   }
 
@@ -28,19 +48,32 @@ export default function Home() {
       <header>
         <div>
           <p className="eyebrow">Milestone Escrow · sandbox</p>
-          <h1>Projects</h1>
+          <h1>Your projects</h1>
         </div>
-        <Link href="/projects/new" className="button primary">
-          New project from agreement
-        </Link>
+        <div className="actions" style={{ marginTop: 0 }}>
+          <button onClick={startDemo} disabled={starting}>{starting ? "Setting up…" : "Try the demo project"}</button>
+          <Link href="/projects/new" className="button primary">New project from agreement</Link>
+        </div>
       </header>
 
       {error && <div className="error">{error}</div>}
       {projects === null && !error && <p className="muted">Loading…</p>}
 
+      {projects?.length === 0 && (
+        <section className="card empty">
+          <h2>Freelancers get paid when the work is done. Clients only pay for work that&apos;s done.</h2>
+          <p className="muted">
+            Paste an agreement and the AI turns it into milestones with checkable criteria. The client funds each milestone with PayPal, an AI reviewer checks the delivery, and the money is released automatically when the work meets the agreement.
+          </p>
+          <p className="small muted">
+            <strong>Try the demo project</strong> gives you your own copy of a bakery webshop project, with both the client and the freelancer role in this browser. Payments run in the PayPal sandbox.
+          </p>
+        </section>
+      )}
+
       {projects?.map((p) => {
         const total = sumCents(p.milestones);
-        const held = sumCents(p.milestones, (m) => m.status === "funded");
+        const held = sumCents(p.milestones, (m) => !["draft", "awaiting_funding", "released", "split", "refunded"].includes(m.status));
         const settled = sumCents(p.milestones, (m) => ["released", "split", "refunded"].includes(m.status));
         return (
           <Link key={p.id} href={`/projects/${p.id}`} className="card link-card">
@@ -58,8 +91,6 @@ export default function Home() {
           </Link>
         );
       })}
-
-      <button onClick={reset}>Reset demo</button>
     </main>
   );
 }

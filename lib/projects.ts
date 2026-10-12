@@ -1,5 +1,6 @@
 // Project lifecycle before money moves: AI drafts a plan from the agreement,
 // either party may edit it, and both must approve the same version.
+import { issueAccess } from "./access";
 import { extractMilestonePlan } from "./ai";
 import { EscrowError } from "./escrow";
 import {
@@ -25,6 +26,7 @@ export async function createProjectFromAgreement(input: { agreement: string; fre
   if (plan.milestones.length === 0) throw new EscrowError("No milestones found in this agreement.");
 
   const now = new Date().toISOString();
+  const { tokens, access } = issueAccess();
   const project: Project = {
     id: newId("p"),
     title: plan.projectTitle,
@@ -34,6 +36,7 @@ export async function createProjectFromAgreement(input: { agreement: string; fre
     currency: plan.currency.toUpperCase(),
     status: "proposed",
     approvals: { client: false, freelancer: false },
+    access,
     agreement,
     issues: plan.issues,
     createdAt: now,
@@ -55,7 +58,8 @@ export async function createProjectFromAgreement(input: { agreement: string; fre
   }));
 
   await insertProject(project, milestones);
-  return { ...project, milestones };
+  // The raw tokens are returned once, here; only their hashes are stored.
+  return { projectId: project.id, tokens };
 }
 
 export type MilestoneEdit = { title?: string; amountCents?: number; criteria?: string[]; evidence?: string; dueDate?: string | null };

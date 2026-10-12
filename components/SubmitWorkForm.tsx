@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { authHeaders } from "@/lib/client";
 import type { Milestone } from "@/lib/store";
 
 /** Freelancer delivers a milestone: note, links and screenshots/PDFs. */
@@ -14,7 +15,7 @@ export function SubmitWorkForm({ milestone, onSubmitted }: { milestone: Mileston
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/milestones/${milestone.id}/submit`, { method: "POST", body: new FormData(e.currentTarget) });
+      const res = await fetch(`/api/milestones/${milestone.id}/submit`, { method: "POST", headers: authHeaders(), body: new FormData(e.currentTarget) });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error ?? `Request failed (${res.status})`);
       onSubmitted();

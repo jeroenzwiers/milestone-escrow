@@ -11,14 +11,29 @@ Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Eve
 - [x] **Week 2: AI milestone plans.** Paste a quote, email or chat. Claude turns it into milestones with amounts, objectively checkable acceptance criteria and the evidence to submit, and flags gaps that could cause a dispute later. Both parties can edit the plan and must approve the same version before anything can be funded.
 - [x] **Week 3: AI verification.** The freelancer submits notes, links and screenshots/PDFs. A Claude agent inspects the evidence with tools (GitHub pull requests via the API, public web pages) and judges every acceptance criterion with an explanation and a confidence score. Policy in code turns that into a decision: all met with high confidence starts a challenge window followed by automatic payout; anything unmet goes back to the freelancer with feedback; uncertainty goes to the client. PayPal webhooks keep payout status current.
 - [x] **Week 4a: AI mediation.** The client can object to a verified delivery and the freelancer can contest a rejection. Both state their side, Claude proposes a split with reasoning per criterion, and PayPal executes it (partial payout and partial refund) only once both parties accept the same proposal.
-- [ ] Week 4b: hosted demo, demo deliverable, polish.
+- [x] **Personal links.** Each party acts through a private link; the server derives the role from it, so only the client can fund, release or refund and only the freelancer can deliver. Judges get their own copy of the demo project with both roles.
+- [ ] Week 4b: hosted demo, polish.
 
 ## Demo deliverable
 
-The seeded project is a webshop for a fictional bakery. Its deliverable is a real repository, [jeroenzwiers/gouden-korst-webshop](https://github.com/jeroenzwiers/gouden-korst-webshop), live at <https://jeroenzwiers.github.io/gouden-korst-webshop/>:
+The demo project (**Try the demo project** on the home page) is a webshop for a fictional bakery. Its deliverable is a real repository, [jeroenzwiers/gouden-korst-webshop](https://github.com/jeroenzwiers/gouden-korst-webshop), live at <https://jeroenzwiers.github.io/gouden-korst-webshop/>:
 
 - **Milestone 1** ([PR #1](https://github.com/jeroenzwiers/gouden-korst-webshop/pull/1), merged): homepage and catalogue. Submit the PR, the live URL and the screenshots in `demo/evidence/`, and the reviewer approves it.
 - **Milestone 2** ([PR #2](https://github.com/jeroenzwiers/gouden-korst-webshop/pull/2), open): ordering and PayPal checkout, but deliberately **without** the agreed confirmation email. Submit the PR and the reviewer asks for changes.
+
+## Who can do what
+
+There are no accounts. When a project is created, each party gets a **personal link** with a random token; the server stores only its SHA-256 hash and derives the caller's role from the token on every request (`lib/access.ts`). Whatever role the browser claims is ignored.
+
+| Action | Client | Freelancer |
+|---|---|---|
+| View, edit and approve the plan | ✓ | ✓ |
+| Fund a milestone, release, split or refund, request changes | ✓ | |
+| Submit work, contest a rejection | | ✓ |
+| Object to a verified delivery | ✓ | |
+| Add a statement, ask for and accept a mediation proposal | ✓ | ✓ |
+
+**Try the demo project** creates a private copy of the bakery project for the visitor with both links in their browser, so one person can play both roles without affecting anyone else's demo.
 
 ## How the AI is kept in check
 
@@ -57,7 +72,7 @@ Requires Node 20+, a PayPal developer account and an Anthropic API key.
    npm run dev                  # http://localhost:3000
    ```
 4. Optional: once deployed, add a webhook for `https://<host>/api/webhooks/paypal` in the PayPal dashboard and set `PAYPAL_WEBHOOK_ID`. Locally the app polls payout status instead.
-5. In the app, click **New project from agreement** → **Use example** to let the AI draft a plan. Review it, approve it as both parties, then fund a milestone with the **client** sandbox account and switch to **Freelancer** (top right) to submit the work. The seeded bakery project is already approved if you want to skip straight to payments.
+5. In the app, click **Try the demo project** for an approved bakery project with both roles in your browser: fund a milestone as **Client** with the client sandbox account, then switch to **Freelancer** (top right) to submit the work. Or click **New project from agreement** → **Use example** to let the AI draft a plan; afterwards choose *Demo: also act as the freelancer in this browser* to approve it as both parties.
 
 ## Project layout
 
@@ -73,8 +88,10 @@ Requires Node 20+, a PayPal developer account and an Anthropic API key.
 | `lib/delivery.ts` | Submit work, run the review, challenge window, disputes, auto-release |
 | `lib/mediation.ts` | Disputes: statements, AI split proposal, two-party acceptance |
 | `lib/webhooks.ts` | PayPal webhook events (payout status, disputes) |
+| `lib/access.ts` | Personal links: token hashing, role checks for every API route |
 | `lib/ratelimit.ts` | Caps AI calls so a public demo can't drain the API credit |
-| `app/api/projects/…` | Create from agreement, edit milestones, approve |
+| `app/api/projects/…` | Create from agreement, view, edit milestones, approve |
+| `app/api/demo/start` | Private copy of the demo project for a visitor |
 | `app/api/milestones/…` | `order`, `capture`, `submit`, `dispute`, `request-changes`, `statement`, `mediate`, `accept`, `release` (full or split), `refund` |
 | `app/api/webhooks/paypal` | Verified PayPal webhook receiver |
 | `app/`, `components/` | UI: project list, new project, plan review, funding with the PayPal JS SDK v6 |

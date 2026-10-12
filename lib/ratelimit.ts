@@ -32,3 +32,9 @@ export function allowAiCall(req: Request): boolean {
   const ip = clientIp(req.headers.get("x-forwarded-for"));
   return take(`ip:${ip}`, PER_IP_PER_HOUR, 3_600_000) && take("global", GLOBAL_PER_DAY, 86_400_000);
 }
+
+/** Demo copies are cheap (no AI), but each one is stored; cap them per address. */
+export function allowDemoStart(req: Request): boolean {
+  const ip = clientIp(req.headers.get("x-forwarded-for"));
+  return take(`demo:${ip}`, 20, 3_600_000);
+}
