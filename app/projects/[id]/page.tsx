@@ -13,10 +13,20 @@ export default function ProjectPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const [role, setRole] = useRole();
+
   const refresh = useCallback(() => api<ProjectWithMilestones>(`/api/projects/${id}`).then(setProject).catch((e) => setError(e.message)), [id]);
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Follow the AI review and the challenge-window countdown without reloading.
+  const live = project?.milestones.some((m) => m.status === "in_review" || m.status === "verified" || m.payout?.status === "PENDING");
+  useEffect(() => {
+    if (!live) return;
+    const t = setInterval(refresh, 2500);
+    return () => clearInterval(t);
+  }, [live, refresh]);
 
   async function run(key: string, fn: () => Promise<unknown>): Promise<boolean> {
     setBusy(key);
@@ -53,6 +63,7 @@ export default function ProjectPage() {
           <p className="eyebrow">{[project.clientName, project.freelancerName].filter(Boolean).join(" → ") || "Project"}</p>
           <h1>{project.title}</h1>
         </div>
+        <RoleSwitch role={role} onChange={setRole} />
         <div className="totals">
           <div><span className="muted small">Total</span><strong>{money(total, currency)}</strong></div>
           {project.status === "active" && (
@@ -82,12 +93,45 @@ export default function ProjectPage() {
         </>
       ) : (
         milestones.map((m, i) => (
-          <MilestoneCard key={m.id} m={m} index={i} busy={busy === m.id} run={(fn) => run(m.id, fn)} onError={setError} onFunded={refresh} />
+          <MilestoneCard key={m.id} m={m} index={i} role={role} busy={busy === m.id} run={(fn) => run(m.id, fn)} onError={setError} onChanged={refresh} />
         ))
       )}
 
       <AuditLog events={project.events} />
     </main>
+  );
+}
+
+// Demo convenience: one browser plays both parties. Remembered per browser.
+function useRole(): [Role, (r: Role) => void] {
+  const [role, setRole] = useState<Role>("client");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("role");
+      if (saved === "client" || saved === "freelancer") setRole(saved);
+    } catch {}
+  }, []);
+  return [
+    role,
+    (r) => {
+      setRole(r);
+      try {
+        localStorage.setItem("role", r);
+      } catch {}
+    },
+  ];
+}
+
+function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
+  return (
+    <div className="role-switch" role="group" aria-label="Viewing as">
+      <span className="muted small">Viewing as</span>
+      {(["client", "freelancer"] as const).map((r) => (
+        <button key={r} className={role === r ? "active" : ""} onClick={() => onChange(r)} aria-pressed={role === r}>
+          {r === "client" ? "Client" : "Freelancer"}
+        </button>
+      ))}
+    </div>
   );
 }
 

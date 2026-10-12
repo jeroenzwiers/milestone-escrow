@@ -98,3 +98,64 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 
 pre.agreement { white-space: pre-wrap; font: inherit; font-size: 14px; margin: 12px 0 0; }
 main > details { margin-top: 24px; }
+
+/* Week 3: delivery, AI review, challenge window */
+header { align-items: center; }
+.role-switch { display: inline-flex; align-items: center; gap: 4px; padding: 3px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.role-switch span { padding: 0 6px; }
+.role-switch button { border: none; padding: 5px 12px; background: transparent; }
+.role-switch button.active { background: var(--text); color: #fff; }
+
+.badge.in_review { background: #e6efff; color: var(--accent); }
+.badge.changes_requested, .badge.disputed { background: #fbe9e7; color: var(--bad); }
+.badge.needs_review { background: #fdf0e1; color: var(--warn); }
+.badge.verified { background: #e3f4ec; color: var(--ok); }
+
+.hint { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+.notice { margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.notice p { margin: 0; }
+.notice.ok { background: #e3f4ec; }
+.notice.warn { background: #fdf0e1; }
+.notice.reviewing { background: #e6efff; }
+.notice textarea { margin-top: 10px; }
+.reviewing-head { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.spinner { width: 14px; height: 14px; border: 2px solid var(--accent); border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+ol.trace { margin: 8px 0 0; padding-left: 22px; font-size: 13px; color: var(--muted); }
+.notice.reviewing ol.trace li:last-child { color: var(--text); }
+
+.verification { margin-top: 12px; }
+.verdict { padding: 12px 14px; border-radius: 8px; border-left: 4px solid; }
+.verdict p { margin: 4px 0 0; font-size: 14px; }
+.verdict.ok { background: #e3f4ec; border-color: var(--ok); }
+.verdict.bad { background: #fbe9e7; border-color: var(--bad); }
+.verdict.warn { background: #fdf0e1; border-color: var(--warn); }
+.verdict-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+ul.checks { list-style: none; margin: 12px 0 0; padding: 0; }
+ul.checks li { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+ul.checks li:first-child { border-top: none; }
+ul.checks p { margin: 0; }
+.criterion { font-weight: 500; }
+.icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 13px; font-weight: 700; color: #fff; }
+.checks .met .icon { background: var(--ok); }
+.checks .not_met .icon { background: var(--bad); }
+.checks .unclear .icon { background: var(--warn); }
+.confidence { white-space: nowrap; opacity: 0.8; }
+.feedback { margin-top: 8px; }
+.feedback p { margin: 4px 0 0; }
+
+.submission { margin-top: 10px; }
+.quote { margin: 8px 0; padding-left: 10px; border-left: 3px solid var(--border); white-space: pre-wrap; }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.thumbs img { height: 72px; border-radius: 6px; border: 1px solid var(--border); }
+.thumbs .file { display: inline-block; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+
+form.deliver { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+form.deliver .label { margin-top: 0; }
+form.deliver p { margin: 4px 0 0; }
+input[type="file"] { font: inherit; font-size: 14px; }
+button.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+.decision { margin-top: 12px; }
+.decision textarea { margin-top: 4px; }
+.manual { margin-top: 12px; }
+.settlement { margin: 12px 0 0; font-size: 14px; }

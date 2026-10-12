@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "sandbox:check": "tsx --env-file-if-exists=.env.local scripts/sandbox-check.ts",
     "sandbox:e2e": "tsx --env-file-if-exists=.env.local scripts/sandbox-e2e.ts",
-    "ai:extract": "tsx --env-file-if-exists=.env.local scripts/ai-extract.ts"
+    "ai:extract": "tsx --env-file-if-exists=.env.local scripts/ai-extract.ts",
+    "ai:verify": "tsx --env-file-if-exists=.env.local scripts/ai-verify.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

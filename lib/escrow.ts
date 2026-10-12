@@ -5,6 +5,10 @@ import { getMilestone, getProject, logEvent, updateMilestone, type Milestone, ty
 
 const FEE_PERCENT = Number(process.env.PLATFORM_FEE_PERCENT ?? 5);
 
+// Statuses in which the platform holds the client's money and it can be settled.
+// Not "in_review": wait for the reviewer to finish before money moves.
+export const HELD: ReadonlySet<Milestone["status"]> = new Set(["funded", "changes_requested", "needs_review", "verified", "disputed"]);
+
 // One money operation per milestone at a time (single-process; fine for the demo).
 const locks = new Set<string>();
 async function withLock<T>(id: string, fn: () => Promise<T>): Promise<T> {
@@ -96,7 +100,7 @@ export function confirmFunding(id: string, orderId: string) {
 export function settle(id: string, freelancerShareCents: number, reason: string) {
   return withLock(id, async () => {
     const m = await mustGet(id);
-    if (m.status !== "funded") throw new EscrowError(`Milestone ${id} is ${m.status}, not funded`);
+    if (!HELD.has(m.status)) throw new EscrowError(`Milestone ${id} is ${m.status}; there are no funds to settle`);
     if (!m.captureId) throw new EscrowError(`Milestone ${id} has no capture`);
     if (!Number.isInteger(freelancerShareCents) || freelancerShareCents < 0 || freelancerShareCents > m.amountCents) {
       throw new EscrowError(`Freelancer share must be between 0 and ${m.amountCents} cents`);
@@ -140,7 +144,7 @@ export function settle(id: string, freelancerShareCents: number, reason: string)
   });
 }
 
-/** Poll PayPal for the latest payout status (webhooks replace this in week 3). */
+/** Poll PayPal for the latest payout status (fallback for when webhooks can't reach us, e.g. localhost). */
 export async function refreshPayout(id: string) {
   const m = await mustGet(id);
   if (!m.payout) return m;

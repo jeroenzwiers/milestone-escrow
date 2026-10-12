@@ -3,10 +3,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 
-const MODEL = "claude-opus-5-5";
+export const MODEL = "claude-opus-5-5";
 
 let client: Anthropic | null = null;
-function anthropic(): Anthropic {
+export function anthropic(): Anthropic {
   if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not set (see .env.example)");
   // Only needed for keys that aren't scoped to a single workspace.
   const workspace = process.env.ANTHROPIC_WORKSPACE_ID;

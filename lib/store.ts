@@ -1,4 +1,4 @@
-// Week-1/2 persistence: a JSON file in data/. Swap for Postgres before deploying
+// Persistence: a JSON file in data/. Swap for Postgres before deploying
 // (Render's disk is ephemeral); everything goes through these functions.
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -6,7 +6,12 @@ import path from "node:path";
 export type MilestoneStatus =
   | "draft" // agreed (or still being agreed), not yet paid by the client
   | "awaiting_funding" // PayPal order created, client approving
-  | "funded" // captured, held by the platform
+  | "funded" // captured, held by the platform, waiting for delivery
+  | "in_review" // freelancer delivered; the AI reviewer is checking it
+  | "changes_requested" // reviewer (or client) found unmet criteria; freelancer can resubmit
+  | "needs_review" // reviewer couldn't decide; the client decides
+  | "verified" // all criteria met; auto-release after the challenge window
+  | "disputed" // client objected during the challenge window
   | "released" // fully paid out to the freelancer
   | "refunded" // fully returned to the client
   | "split"; // partly paid out, partly refunded
@@ -47,7 +52,41 @@ export type Milestone = {
   captureId?: string;
   payout?: { batchId: string; amountCents: number; feeCents: number; status: string };
   refund?: { id: string; amountCents: number; status: string };
+  submissions?: Submission[];
+  releaseAt?: string; // end of the challenge window when status is "verified"
+  dispute?: { at: string; reason: string };
   events: AuditEvent[];
+};
+
+export type CriterionVerdict = {
+  criterion: string;
+  verdict: "met" | "not_met" | "unclear";
+  confidence: number; // 0..1
+  explanation: string;
+  evidenceRefs: string[];
+};
+
+export type TraceEntry = { at: string; tool: string; summary: string };
+
+export type Verification = {
+  startedAt: string;
+  finishedAt?: string;
+  // Decided by policy in code from the per-criterion verdicts, not by the model directly.
+  decision?: "approve" | "request_changes" | "needs_human";
+  summary?: string;
+  feedback?: string;
+  criteria?: CriterionVerdict[];
+  trace: TraceEntry[];
+  error?: string;
+};
+
+export type Submission = {
+  id: string;
+  at: string;
+  note: string;
+  links: string[];
+  files: { name: string; path: string; mediaType: string; size: number }[];
+  verification?: Verification;
 };
 
 export type ProjectWithMilestones = Project & { milestones: Milestone[] };
@@ -101,6 +140,14 @@ export async function getProject(id: string): Promise<ProjectWithMilestones | un
 
 export async function getMilestone(id: string): Promise<Milestone | undefined> {
   return (await load()).milestones.find((m) => m.id === id);
+}
+
+export async function findMilestone(pred: (m: Milestone) => boolean): Promise<Milestone | undefined> {
+  return (await load()).milestones.find(pred);
+}
+
+export async function listMilestonesWhere(pred: (m: Milestone) => boolean): Promise<Milestone[]> {
+  return (await load()).milestones.filter(pred);
 }
 
 export function insertProject(project: Project, milestones: Milestone[]): Promise<void> {

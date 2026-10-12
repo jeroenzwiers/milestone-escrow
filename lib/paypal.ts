@@ -195,3 +195,19 @@ export function createPayout(opts: {
 export function getPayoutBatch(batchId: string) {
   return request<PayoutBatch>("GET", `/v1/payments/payouts/${batchId}`);
 }
+
+/** Ask PayPal whether a webhook delivery is genuine (signature + our webhook id). */
+export async function verifyWebhookSignature(headers: Headers, rawBody: string): Promise<boolean> {
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  if (!webhookId) throw new Error("PAYPAL_WEBHOOK_ID is not set");
+  const res = await request<{ verification_status: string }>("POST", "/v1/notifications/verify-webhook-signature", {
+    auth_algo: headers.get("paypal-auth-algo"),
+    cert_url: headers.get("paypal-cert-url"),
+    transmission_id: headers.get("paypal-transmission-id"),
+    transmission_sig: headers.get("paypal-transmission-sig"),
+    transmission_time: headers.get("paypal-transmission-time"),
+    webhook_id: webhookId,
+    webhook_event: JSON.parse(rawBody),
+  });
+  return res.verification_status === "SUCCESS";
+}
