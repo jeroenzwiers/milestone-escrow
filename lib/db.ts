@@ -199,6 +199,8 @@ class SqlBackend implements Backend {
     this.ready = (async () => {
       for (const stmt of SCHEMA.split(";").map((s) => s.trim()).filter(Boolean)) await db.query(stmt);
     })();
+    // Callers await `ready` and get the error; this only keeps a failed start from being an unhandled rejection.
+    this.ready.catch((err) => console.error("storage: could not prepare the database schema", err));
   }
 
   private async q() {
@@ -353,6 +355,7 @@ async function pgliteDriver(): Promise<Driver> {
 /** Lazily constructed backend; SqlBackend needs an async driver, so this proxies until it is ready. */
 function lazySql(driver: () => Promise<Driver>): Backend {
   const backend = driver().then((d) => new SqlBackend(d));
+  backend.catch((err) => console.error("storage: could not connect", err)); // callers still get the error
   return new Proxy({} as Backend, {
     get: (_t, prop: keyof Backend) =>
       async (...args: unknown[]) => {
@@ -362,8 +365,15 @@ function lazySql(driver: () => Promise<Driver>): Backend {
   });
 }
 
+/** Tolerate a URL pasted with surrounding quotes or whitespace, as it appears in .env files. */
+export function normalizeDatabaseUrl(raw: string | undefined): string | undefined {
+  const v = raw?.trim().replace(/^(["'])(.*)\1$/, "$2").trim();
+  return v || undefined;
+}
+
 function createBackend(): Backend {
-  if (process.env.DATABASE_URL) return lazySql(() => pgDriver(process.env.DATABASE_URL!));
+  const url = normalizeDatabaseUrl(process.env.DATABASE_URL);
+  if (url) return lazySql(() => pgDriver(url));
   if (process.env.STORE === "pglite") return lazySql(pgliteDriver);
   return new FileBackend(process.env.DATA_DIR ?? path.join(/* turbopackIgnore: true */ process.cwd(), "data"));
 }
@@ -373,5 +383,5 @@ const g = globalThis as { __escrowBackend?: Backend };
 export const backend: Backend = (g.__escrowBackend ??= createBackend());
 
 export function backendName(): string {
-  return process.env.DATABASE_URL ? "postgres" : process.env.STORE === "pglite" ? "pglite" : "file";
+  return normalizeDatabaseUrl(process.env.DATABASE_URL) ? "postgres" : process.env.STORE === "pglite" ? "pglite" : "file";
 }

@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Milestone Escrow",
-  description: "Milestone payments that release when the work is verified.",
+  description: "Give it a goal and a budget: AI agents assemble a team, PayPal holds the money, and each provider is paid when their work is verified.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

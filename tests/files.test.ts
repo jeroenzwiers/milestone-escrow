@@ -46,3 +46,17 @@ describe("file storage", () => {
     assert.equal(await getFile("uploads/none/none/none.png"), undefined);
   });
 });
+
+describe("database URL from the environment", () => {
+  it("strips surrounding quotes and whitespace, and treats empty as unset", async () => {
+    const { normalizeDatabaseUrl } = await import("../lib/db");
+    const url = "postgresql://u:p@host/db?sslmode=require";
+    assert.equal(normalizeDatabaseUrl(`"${url}"`), url);
+    assert.equal(normalizeDatabaseUrl(`  '${url}'  `), url);
+    assert.equal(normalizeDatabaseUrl(` ${url}\n`), url);
+    assert.equal(normalizeDatabaseUrl(url), url);
+    assert.equal(normalizeDatabaseUrl('""'), undefined);
+    assert.equal(normalizeDatabaseUrl("  "), undefined);
+    assert.equal(normalizeDatabaseUrl(undefined), undefined);
+  });
+});

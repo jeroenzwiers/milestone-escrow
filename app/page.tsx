@@ -65,10 +65,10 @@ export default function Home() {
           <h1>Your projects</h1>
         </div>
         <div className="actions" style={{ marginTop: 0 }}>
-          <button onClick={startTeamDemo} disabled={starting}>{starting ? "Setting up…" : "Try the team demo"}</button>
-          <button onClick={startDemo} disabled={starting}>Single-freelancer demo</button>
+          <button className="primary" onClick={startTeamDemo} disabled={starting}>{starting ? "Setting up…" : "Try the team demo"}</button>
+          <Link href="/goals/new" className="button">Start from a goal</Link>
           <Link href="/projects/new" className="button">From an agreement</Link>
-          <Link href="/goals/new" className="button primary">Start from a goal</Link>
+          <button onClick={startDemo} disabled={starting}>Single-freelancer demo</button>
         </div>
       </header>
 
@@ -77,12 +77,12 @@ export default function Home() {
 
       {projects?.length === 0 && (
         <section className="card empty">
-          <h2>Freelancers get paid when the work is done. Clients only pay for work that&apos;s done.</h2>
+          <h2>Give it a goal and a budget. A team assembles, and everyone is paid when their part is verified.</h2>
           <p className="muted">
-            Paste an agreement and the AI turns it into milestones with checkable criteria. The client funds each milestone with PayPal, an AI reviewer checks the delivery, and the money is released automatically when the work meets the agreement.
+            AI agents ask providers for offers, negotiate within your budget and propose one plan. You fund it with a single PayPal payment; each provider is paid out only after an AI reviewer has checked their delivery against the agreed criteria, and unspent money comes back to you. If a provider drops out, the plan repairs itself.
           </p>
           <p className="small muted">
-            <strong>Try the team demo</strong> gives you your own copy of a bakery&apos;s goal with the team the agents assembled for it; approve and fund it, then let a provider drop out and watch the plan repair itself. You can act as the client and as every provider in this browser. <strong>Start from a goal</strong> runs the agents live on your own goal. Payments run in the PayPal sandbox.
+            <strong>Try the team demo</strong> gives you your own copy of a bakery&apos;s goal with the team the agents assembled for it in an earlier run; approve and fund it, then let a provider drop out and watch the agents replan live. You can act as the client and as every provider in this browser. <strong>Start from a goal</strong> runs the agents on your own goal; <strong>From an agreement</strong> turns a quote into milestones for one freelancer. Providers are demo agents and payments run in the PayPal sandbox.
           </p>
         </section>
       )}
