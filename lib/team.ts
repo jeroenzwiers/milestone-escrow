@@ -5,6 +5,7 @@
 import { betaZodOutputFormat, betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { issueTeamAccess } from "./access";
+import demoTeam from "./demo-team.json";
 import { AiError, anthropic, FAST_MODEL, MODEL } from "./ai";
 import { EscrowError } from "./escrow";
 import { checkPlan, executionOrder, type PlanProposal } from "./plan";
@@ -224,6 +225,50 @@ export async function runPlanner(opts: {
 }
 
 // ---------- Project lifecycle ----------
+
+/**
+ * Team demo for judges: a copy of a plan the agents assembled in an earlier, recorded
+ * run, ready for approval, so nobody waits a minute before trying it. It is labelled
+ * as recorded; replanning after a dropout runs live.
+ */
+export async function createTeamDemo() {
+  const fixture = demoTeam as unknown as {
+    goal: Goal;
+    plan: { rationale: string; leftoverPolicy: string; offers: Offer[]; trace: TraceEntry[] };
+    milestones: PlanProposal["milestones"];
+  };
+  const { tokens, access } = issueTeamAccess(PROVIDERS.map((p) => p.id));
+  const now = new Date().toISOString();
+  const project: Project = {
+    id: newId("p"),
+    title: "Online lunch orders for Bakery De Gouden Korst",
+    clientName: "Sanne (De Gouden Korst)",
+    freelancerName: null,
+    freelancerEmail: "",
+    currency: process.env.CURRENCY ?? "EUR",
+    status: "proposed",
+    approvals: { client: false, freelancer: true },
+    access,
+    mode: "team",
+    goal: fixture.goal,
+    plan: {
+      version: 1,
+      rationale: fixture.plan.rationale,
+      leftoverPolicy: fixture.plan.leftoverPolicy,
+      offers: fixture.plan.offers,
+      trace: [{ at: now, tool: "start", summary: "Recorded run: this team was assembled by the agents in an earlier session. Start your own goal to watch them live." }, ...fixture.plan.trace],
+      history: [],
+      unavailable: [],
+      state: "ready",
+    },
+    agreement: "",
+    issues: [],
+    createdAt: now,
+    events: [{ at: now, type: "demo_plan_loaded", detail: "Recorded team plan v1" }],
+  };
+  await insertProject(project, toMilestones(project.id, project.currency, { rationale: "", leftoverPolicy: "", milestones: fixture.milestones }));
+  return { projectId: project.id, tokens };
+}
 
 const MAX_GOAL_CHARS = 2_000;
 

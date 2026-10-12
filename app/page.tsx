@@ -29,6 +29,20 @@ export default function Home() {
       .catch((e) => setError(e.message));
   }, []);
 
+  async function startTeamDemo() {
+    setStarting(true);
+    setError(null);
+    try {
+      const { projectId, tokens } = await api<{ projectId: string; tokens: { client: string; providers: Record<string, string> } }>("/api/demo/team", "POST");
+      saveToken(projectId, "client", tokens.client);
+      for (const [providerId, token] of Object.entries(tokens.providers)) saveToken(projectId, `provider:${providerId}`, token);
+      router.push(`/projects/${projectId}`);
+    } catch (e) {
+      setError((e as Error).message);
+      setStarting(false);
+    }
+  }
+
   async function startDemo() {
     setStarting(true);
     setError(null);
@@ -51,7 +65,8 @@ export default function Home() {
           <h1>Your projects</h1>
         </div>
         <div className="actions" style={{ marginTop: 0 }}>
-          <button onClick={startDemo} disabled={starting}>{starting ? "Setting up…" : "Try the demo project"}</button>
+          <button onClick={startTeamDemo} disabled={starting}>{starting ? "Setting up…" : "Try the team demo"}</button>
+          <button onClick={startDemo} disabled={starting}>Single-freelancer demo</button>
           <Link href="/projects/new" className="button">From an agreement</Link>
           <Link href="/goals/new" className="button primary">Start from a goal</Link>
         </div>
@@ -67,7 +82,7 @@ export default function Home() {
             Paste an agreement and the AI turns it into milestones with checkable criteria. The client funds each milestone with PayPal, an AI reviewer checks the delivery, and the money is released automatically when the work meets the agreement.
           </p>
           <p className="small muted">
-            <strong>Try the demo project</strong> gives you your own copy of a bakery webshop project, with both the client and the freelancer role in this browser. Payments run in the PayPal sandbox.
+            <strong>Try the team demo</strong> gives you your own copy of a bakery&apos;s goal with the team the agents assembled for it; approve and fund it, then let a provider drop out and watch the plan repair itself. You can act as the client and as every provider in this browser. <strong>Start from a goal</strong> runs the agents live on your own goal. Payments run in the PayPal sandbox.
           </p>
         </section>
       )}

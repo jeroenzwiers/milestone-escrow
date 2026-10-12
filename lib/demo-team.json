@@ -1,0 +1,262 @@
+{
+  "recordedAt": "2026-10-12T10:30:40.318Z",
+  "goal": {
+    "text": "I want to start online lunch orders for my bakery next week: customers order and pay online, and lunches are delivered in the neighbourhood at lunchtime.",
+    "context": "Existing static website on GitHub Pages with 24 products. Menu: 8 lunch items. Most customers are offices within 2 km.",
+    "deadline": "next week",
+    "budgetCents": 30000
+  },
+  "plan": {
+    "rationale": "Who does what, in order:\n1. Noor de Wit (€35) writes short, paste-ready descriptions for your 8 lunch items. She needs your item names, ingredients, allergens and prices, and delivers 2 working days after she gets them. Please send these before Monday so Daan has the texts in time.\n2. Daan Visser (€180) adds an order page to your existing GitHub Pages site. It has a cart, PayPal checkout, a choice of lunchtime slot, an address check for the 2 km area, a confirmation email to the customer and an order email to you. He starts Monday and needs 3 working days, so expect to go live on Wednesday or Thursday next week, not Monday. Before he starts you need to: have a PayPal business account, give him access to the GitHub repository, and decide your delivery slots and the email address for order notifications.\n3. BezorgBende (€75) sets up the connection with your bakery and delivers lunches for the first week after go-live. They deliver between 10:00 and 16:00, up to 8 km away, with no minimum number of orders. You forward each order email to them and have the lunches packed in time for each slot. From week two they charge per delivery. That cost is not part of this plan.\n\nWhy these providers: Studio Pixel turned the job down: they are fully booked for two weeks, don't work on existing sites and have a €250 minimum. Fietskoerier is €25 cheaper but only rides on days with at least 10 orders. In the first week of a new service you may have days below that and would then have to deliver yourself, so BezorgBende with no minimum is safer. Noor's texts-plus-photos package (€60) would have put the total at €315, over your budget, and she wouldn't lower the price. So we booked texts only. You can use your own photos or add hers later.\n\nTotal: €290 of your €300.",
+    "leftoverPolicy": "The unspent €10 is returned to the client from escrow. So is any milestone amount that is not released because the delivery fails verification.",
+    "offers": [
+      {
+        "note": "We can do texts and photos for €60 within 2 working days of a shop visit, so schedule the visit early next week to meet the launch. If a visit isn't possible in time, texts only for €35 can be delivered sooner.",
+        "scope": "Short descriptions (and if possible photos) for 8 lunch menu items for an online order page, delivered within a few days.",
+        "accepted": true,
+        "conditions": [
+          "Price covers menu and product texts plus simple product photos for up to 30 items; the 8 lunch items fall well within this, and the other 16 products can be included at no extra cost.",
+          "Photos require a visit to the bakery with the lunch items prepared and available on an agreed day and time.",
+          "Delivery is within 2 working days of the shop visit (or of receiving item details if texts only).",
+          "Texts-only option without photos: €35.",
+          "Client provides item names, ingredients, allergens and prices before the visit."
+        ],
+        "priceCents": 6000,
+        "providerId": "noor",
+        "deliverable": "Short, appetising descriptions for the 8 lunch menu items (optionally all 24 products), plus simple product photos of each item, delivered as web-ready files and text ready to paste into the online order page.",
+        "durationDays": 2
+      },
+      {
+        "note": "We have to decline: we are fully booked for the next two weeks and do not do partial work on existing sites. We could build a complete standalone lunch-ordering shop starting in two weeks, from €250 upward, and quote that properly on request.",
+        "scope": "Add online lunch ordering with online payment to the bakery's existing static GitHub Pages site: order page for 8 lunch items, lunchtime delivery slot, delivery address within 2 km, confirmation to customer and notification to bakery. Live next week.",
+        "accepted": false,
+        "conditions": [
+          "Earliest start is two weeks from now; going live next week is not possible",
+          "We do not do partial jobs on someone else's existing site, so we will not add ordering to the current GitHub Pages site",
+          "Minimum project size is €250"
+        ],
+        "priceCents": 0,
+        "providerId": "studio-pixel",
+        "deliverable": "Nothing under the scope as asked. As an alternative: a standalone lunch-ordering webshop built by us, with the 8 lunch items, online payment, lunchtime delivery slot selection, a delivery address check within 2 km, an order confirmation to the customer and a notification to the bakery. It would be linked from the existing site.",
+        "durationDays": 0
+      },
+      {
+        "note": "I can deliver the full scope for €180, starting Monday with go-live within the week, provided the PayPal business account and final menu texts are ready in time.",
+        "scope": "Add online lunch ordering with online payment (e.g. PayPal checkout) to the bakery's existing static GitHub Pages site: order page for 8 lunch items, choice of delivery time slot at lunchtime, delivery address within 2 km, order confirmation to customer and order notification to bakery. Live next week.",
+        "accepted": true,
+        "conditions": [
+          "Start Monday; 3 working days needed, so go-live is realistic around Wednesday/Thursday next week",
+          "Client has or creates a PayPal business account before start (required for checkout)",
+          "Final menu and product texts (8 lunch items, prices, descriptions) delivered before go-live",
+          "Client provides delivery time slots, delivery area rules (2 km) and the email address for order notifications",
+          "Repository access to the GitHub Pages site"
+        ],
+        "priceCents": 18000,
+        "providerId": "daan",
+        "deliverable": "Order page on the existing GitHub Pages site for the 8 lunch items with cart, PayPal checkout, lunchtime delivery time slot selection, delivery address capture with a 2 km area check, order confirmation to the customer and order notification to the bakery.",
+        "durationDays": 3
+      },
+      {
+        "note": "We can start next week for €50, covering setup and the first week. Make sure the online ordering closes or exports by 10:30, and plan a fallback such as pickup for days under 10 orders.",
+        "scope": "Lunchtime delivery of bakery lunch orders to customers (mostly offices) within 2 km of the bakery, starting next week. Please quote for the first week of weekday deliveries and state any minimums or conditions.",
+        "accepted": true,
+        "conditions": [
+          "€50 setup fee covers connecting the bakery and the first week of deliveries; from week two, deliveries are charged per delivery.",
+          "Deliveries only between 11:00 and 13:00.",
+          "Delivery radius maximum 3 km from the bakery (the 2 km office area fits).",
+          "We only ride on days with at least 10 orders; on days with fewer orders there is no delivery and the bakery handles those orders itself (e.g. pickup).",
+          "The order list per delivery round (addresses, names, contact numbers, items) must reach us by 10:30 on the delivery day.",
+          "Orders must be paid online in advance; we do not collect payment.",
+          "Lunches must be packed, labelled per customer and ready for pickup at the bakery at the start of the round."
+        ],
+        "priceCents": 5000,
+        "providerId": "fietskoerier",
+        "deliverable": "Bike courier lunch delivery for the bakery on weekdays in the first week, 11:00–13:00, to customers within 3 km. Includes connecting the bakery to our delivery rounds (setup) and delivering on every day with 10 or more orders.",
+        "durationDays": 5
+      },
+      {
+        "note": "We can deliver from next week. €75 covers setup for the first week, with no order minimum. The client still needs separate online ordering and payment on their website.",
+        "scope": "Lunchtime delivery of bakery lunch orders to customers (mostly offices) within 2 km of the bakery, starting next week. Please quote for the first week of weekday deliveries and state any minimums or conditions.",
+        "accepted": true,
+        "conditions": [
+          "€75 is the one-off setup fee to connect the bakery, covering the first week; after that, deliveries are charged per delivery.",
+          "Delivery window is 10:00–16:00, so lunchtime delivery fits; orders must be ready for pickup in time for the requested slot.",
+          "Delivery radius is 8 km maximum; offices within 2 km are well inside it.",
+          "There is no minimum number of orders.",
+          "We can start the next working day after confirmation, so a start next week is feasible.",
+          "The client must forward order details (address, contact, requested time) to us; the online ordering and payment system is not part of our scope."
+        ],
+        "priceCents": 7500,
+        "providerId": "bezorgbende",
+        "deliverable": "Shop connection and weekday lunchtime delivery of bakery lunch orders by electric van or bike to customers within 8 km (mostly offices within 2 km), between 10:00 and 16:00, for the first week, with per-delivery billing afterwards.",
+        "durationDays": 5
+      },
+      {
+        "note": "I can't go below €60 for texts plus photos; that is my minimum regardless of item count up to 30, so I'll include the other 16 products at no extra cost if useful. If €45 is the hard limit, I can do texts only for €35, delivered within 2 working days.",
+        "scope": "Short descriptions plus simple web-ready product photos for the 8 lunch items only (not the other 16 products), shop visit Monday or Tuesday next week, delivered within 2 working days of the visit.",
+        "accepted": false,
+        "conditions": [
+          "Minimum price for texts plus photos is €60 (covers up to 30 items; reducing to 8 items does not lower the price)",
+          "Shop visit Monday or Tuesday next week required for photos, with all 8 lunch items prepared and available",
+          "Delivery within 2 working days of the visit",
+          "Alternative within budget: texts only, no photos, for €35, delivered within 2 working days"
+        ],
+        "priceCents": 6000,
+        "providerId": "noor",
+        "deliverable": "Short descriptions plus simple web-ready product photos for the 8 lunch items, shot during a shop visit Monday or Tuesday next week (€60). Or, as the within-budget alternative, short descriptions only for the 8 lunch items, no photos (€35).",
+        "durationDays": 2
+      },
+      {
+        "note": "Happy to take this on for €35. If the client also wants simple product photos for the online menu, I can do texts plus photos for up to 30 items for €60, with a visit to the bakery.",
+        "scope": "Texts only, no photos: short descriptions for the 8 lunch menu items, paste-ready, delivered within 2 working days of receiving item details.",
+        "accepted": true,
+        "conditions": [
+          "Client supplies item names, ingredients, allergens and prices for the 8 lunch items",
+          "Delivery within 2 working days after receiving complete item details",
+          "Texts only; no photos included (photos available as an upgrade at €60 total, requires a shop visit)",
+          "One round of minor revisions included"
+        ],
+        "priceCents": 3500,
+        "providerId": "noor",
+        "deliverable": "Short, paste-ready descriptions for the 8 lunch menu items (name plus 1–2 sentence description, allergen notes where provided), delivered as plain text suitable for the website and order form.",
+        "durationDays": 2
+      }
+    ],
+    "trace": [
+      {
+        "at": "2026-10-12T10:30:40.424Z",
+        "tool": "start",
+        "summary": "Planning: I want to start online lunch orders for my bakery next week: customers order and pay online, and lunches are delivered in the neighbourhood at lunchtime. (budget €300.00)"
+      },
+      {
+        "at": "2026-10-12T10:30:49.381Z",
+        "tool": "request_offer",
+        "summary": "Asked Daan Visser: Add online lunch ordering with online payment (e.g. PayPal checkout) to the bakery's existing static GitHub Pages site: order page for 8 lunch items, choice of delivery time slot at lunchtime, delivery address within 2 km, order confirmation to customer and order notification to bakery. Live next week."
+      },
+      {
+        "at": "2026-10-12T10:30:49.382Z",
+        "tool": "request_offer",
+        "summary": "Asked Fietskoerier Demodorp: Lunchtime delivery of bakery lunch orders to customers (mostly offices) within 2 km of the bakery, starting next week. Please quote for the first week of weekday deliveries and state any minimums or conditions."
+      },
+      {
+        "at": "2026-10-12T10:30:49.382Z",
+        "tool": "request_offer",
+        "summary": "Asked Noor de Wit: Short descriptions (and if possible photos) for 8 lunch menu items for an online order page, delivered within a few days."
+      },
+      {
+        "at": "2026-10-12T10:30:49.382Z",
+        "tool": "request_offer",
+        "summary": "Asked Studio Pixel: Add online lunch ordering with online payment to the bakery's existing static GitHub Pages site: order page for 8 lunch items, lunchtime delivery slot, delivery address within 2 km, confirmation to customer and notification to bakery. Live next week."
+      },
+      {
+        "at": "2026-10-12T10:30:49.382Z",
+        "tool": "request_offer",
+        "summary": "Asked BezorgBende: Lunchtime delivery of bakery lunch orders to customers (mostly offices) within 2 km of the bakery, starting next week. Please quote for the first week of weekday deliveries and state any minimums or conditions."
+      },
+      {
+        "at": "2026-10-12T10:30:53.852Z",
+        "tool": "offer",
+        "summary": "Noor de Wit: offers €60.00 · Price covers menu and product texts plus simple product photos for up to 30 items; the 8 lunch items fall well within this, and the other 16 products can be included at no extra cost.; Photos require a visit to the bakery with the lunch items prepared and available on an agreed day and time.; Delivery is within 2 working days of the shop visit (or of receiving item details if texts only).; Texts-only option without photos: €35.; Client provides item names, ingredients, allergens and prices before the visit."
+      },
+      {
+        "at": "2026-10-12T10:30:54.026Z",
+        "tool": "offer",
+        "summary": "Studio Pixel: declines · Earliest start is two weeks from now; going live next week is not possible; We do not do partial jobs on someone else's existing site, so we will not add ordering to the current GitHub Pages site; Minimum project size is €250"
+      },
+      {
+        "at": "2026-10-12T10:30:54.442Z",
+        "tool": "offer",
+        "summary": "Daan Visser: offers €180.00 · Start Monday; 3 working days needed, so go-live is realistic around Wednesday/Thursday next week; Client has or creates a PayPal business account before start (required for checkout); Final menu and product texts (8 lunch items, prices, descriptions) delivered before go-live; Client provides delivery time slots, delivery area rules (2 km) and the email address for order notifications; Repository access to the GitHub Pages site"
+      },
+      {
+        "at": "2026-10-12T10:30:55.156Z",
+        "tool": "offer",
+        "summary": "Fietskoerier Demodorp: offers €50.00 · €50 setup fee covers connecting the bakery and the first week of deliveries; from week two, deliveries are charged per delivery.; Deliveries only between 11:00 and 13:00.; Delivery radius maximum 3 km from the bakery (the 2 km office area fits).; We only ride on days with at least 10 orders; on days with fewer orders there is no delivery and the bakery handles those orders itself (e.g. pickup).; The order list per delivery round (addresses, names, contact numbers, items) must reach us by 10:30 on the delivery day.; Orders must be paid online in advance; we do not collect payment.; Lunches must be packed, labelled per customer and ready for pickup at the bakery at the start of the round."
+      },
+      {
+        "at": "2026-10-12T10:30:57.304Z",
+        "tool": "offer",
+        "summary": "BezorgBende: offers €75.00 · €75 is the one-off setup fee to connect the bakery, covering the first week; after that, deliveries are charged per delivery.; Delivery window is 10:00–16:00, so lunchtime delivery fits; orders must be ready for pickup in time for the requested slot.; Delivery radius is 8 km maximum; offices within 2 km are well inside it.; There is no minimum number of orders.; We can start the next working day after confirmation, so a start next week is feasible.; The client must forward order details (address, contact, requested time) to us; the online ordering and payment system is not part of our scope."
+      },
+      {
+        "at": "2026-10-12T10:31:03.269Z",
+        "tool": "counter_offer",
+        "summary": "Counter-offer to Noor de Wit: €45.00 for Short descriptions plus simple web-ready product photos for the 8 lunch items only (not the other 16 products), shop visit Monday or Tuesday next week, delivered within 2 working days of the visit. (Client budget is €300 total; with development and delivery booked, €45 is what remains. Scope is reduced to the 8 lunch items only.)"
+      },
+      {
+        "at": "2026-10-12T10:31:07.351Z",
+        "tool": "offer",
+        "summary": "Noor de Wit: declines the counter-offer · I can't go below €60 for texts plus photos; that is my minimum regardless of item count up to 30, so I'll include the other 16 products at no extra cost if useful. If €45 is the hard limit, I can do texts only for €35, delivered within 2 working days."
+      },
+      {
+        "at": "2026-10-12T10:31:25.455Z",
+        "tool": "rejected",
+        "summary": "Platform rules rejected the plan: Noor de Wit is planned for 35 but accepted 60."
+      },
+      {
+        "at": "2026-10-12T10:31:30.357Z",
+        "tool": "request_offer",
+        "summary": "Asked Noor de Wit: Texts only, no photos: short descriptions for the 8 lunch menu items, paste-ready, delivered within 2 working days of receiving item details."
+      },
+      {
+        "at": "2026-10-12T10:31:34.724Z",
+        "tool": "offer",
+        "summary": "Noor de Wit: offers €35.00 · Client supplies item names, ingredients, allergens and prices for the 8 lunch items; Delivery within 2 working days after receiving complete item details; Texts only; no photos included (photos available as an upgrade at €60 total, requires a shop visit); One round of minor revisions included"
+      },
+      {
+        "at": "2026-10-12T10:31:48.623Z",
+        "tool": "submit_plan",
+        "summary": "Plan accepted by platform rules: 3 milestones, €290.00 of €300.00"
+      }
+    ]
+  },
+  "milestones": [
+    {
+      "key": "m1",
+      "title": "Menu texts for the 8 lunch items (texts only)",
+      "providerId": "noor",
+      "amountCents": 3500,
+      "criteria": [
+        "Text delivered for all 8 lunch items, each with item name, a 1–2 sentence description, price and allergen notes as supplied by the client",
+        "Delivered as paste-ready plain text in one document",
+        "Delivered within 2 working days after the client supplies complete item details"
+      ],
+      "evidence": "The text document with all 8 item entries, plus the delivery date (email/message timestamp) and the date item details were supplied.",
+      "dependsOn": []
+    },
+    {
+      "key": "m2",
+      "title": "Online lunch ordering with PayPal checkout on the existing GitHub Pages site",
+      "providerId": "daan",
+      "amountCents": 18000,
+      "criteria": [
+        "Order page live on the existing GitHub Pages site and linked from the site navigation, showing all 8 lunch items with the texts and prices from the menu-texts milestone",
+        "Customer can add items to a cart, choose a lunchtime delivery slot from the client-defined slots, and enter a delivery address",
+        "Addresses outside the 2 km delivery area are refused or flagged before payment",
+        "Payment completes via PayPal into the client's PayPal business account (verified by one test order that appears in the account)",
+        "After payment the customer receives an order confirmation and the bakery receives an order notification email containing name, phone number, address, items and requested delivery slot",
+        "Live by Thursday next week at the latest, provided the client's prerequisites were met by Monday",
+        "Changes committed to the client's GitHub repository"
+      ],
+      "evidence": "Live URL of the order page, link to the commits in the repository, screenshots of one completed test order (PayPal transaction, customer confirmation email, bakery notification email), and a test showing an out-of-area address being refused.",
+      "dependsOn": [
+        "m1"
+      ]
+    },
+    {
+      "key": "m3",
+      "title": "Lunchtime delivery setup and first week of deliveries",
+      "providerId": "bezorgbende",
+      "amountCents": 7500,
+      "criteria": [
+        "Bakery connected to BezorgBende: the way of forwarding orders (address, contact, requested time) confirmed in writing",
+        "Every forwarded order in the first week after go-live delivered within its requested lunchtime slot to addresses within the 2 km area, with no order minimum",
+        "Delivery log for the first week lists each order with pickup time and delivery time"
+      ],
+      "evidence": "Written confirmation of the onboarding/forwarding arrangement and a delivery log for the first week (order, address, requested slot, actual delivery time).",
+      "dependsOn": [
+        "m2"
+      ]
+    }
+  ]
+}
