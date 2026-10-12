@@ -1,7 +1,8 @@
 // Escrow state machine on top of PayPal. Every money movement goes through
 // here so the AI agent (week 2+) and the UI share the same guardrails.
 import * as paypal from "./paypal";
-import { getMilestone, getProject, logEvent, updateMilestone, type Milestone, type Project } from "./store";
+import { providerEmail } from "./providers";
+import { getMilestone, getProject, logEvent, updateMilestone, updateProject, type Milestone, type Project } from "./store";
 
 const FEE_PERCENT = Number(process.env.PLATFORM_FEE_PERCENT ?? 5);
 
@@ -42,6 +43,11 @@ async function projectOf(m: Milestone): Promise<Project> {
   return p;
 }
 
+/** Who is paid for a milestone: its provider in team mode, otherwise the project's freelancer. */
+export function payeeOf(m: Milestone, project: Project): string {
+  return m.providerId ? providerEmail(m.providerId) : project.freelancerEmail;
+}
+
 export function platformFee(amountCents: number): number {
   return Math.round((amountCents * FEE_PERCENT) / 100);
 }
@@ -68,6 +74,61 @@ export function startFunding(id: string, urls?: { returnUrl: string; cancelUrl: 
       logEvent(x, "order_created", order.id);
     });
     return order;
+  });
+}
+
+/** Team mode: the client funds every unfunded milestone of the approved plan with one PayPal order. */
+export function startPlanFunding(projectId: string) {
+  return withLock(`p:${projectId}`, async () => {
+    const project = await getProject(projectId);
+    if (!project) throw new EscrowError("Project not found", 404);
+    if (project.mode !== "team") throw new EscrowError("Only team plans are funded as a whole");
+    if (project.status !== "active") throw new EscrowError("Approve the plan before funding it");
+    const open = project.milestones.filter((m) => m.status === "draft" || m.status === "awaiting_funding");
+    if (open.length === 0) throw new EscrowError("Every milestone of this plan is already funded");
+    const total = open.reduce((n, m) => n + m.amountCents, 0);
+    const order = await paypal.createOrder({
+      referenceId: project.id,
+      description: `${project.title}: plan v${project.plan?.version ?? 1}`,
+      amountCents: total,
+      currency: project.currency,
+    });
+    await updateProject(projectId, (p, ms) => {
+      p.plan!.orderId = order.id;
+      for (const m of ms) {
+        if (!open.some((o) => o.id === m.id)) continue;
+        m.orderId = order.id;
+        m.status = "awaiting_funding";
+      }
+      logEvent(p, "plan_order_created", `${order.id}: ${paypal.formatAmount(total)} ${p.currency} for ${open.length} milestones`);
+    });
+    return order;
+  });
+}
+
+/** Team mode: capture the plan order; every milestone in it is then held against that one capture. */
+export function confirmPlanFunding(projectId: string, orderId: string) {
+  return withLock(`p:${projectId}`, async () => {
+    const project = await getProject(projectId);
+    if (!project) throw new EscrowError("Project not found", 404);
+    if (project.plan?.orderId !== orderId) throw new EscrowError("Order does not belong to this plan");
+    const pending = project.milestones.filter((m) => m.orderId === orderId && m.status === "awaiting_funding");
+    if (pending.length === 0) return project;
+
+    const order = await paypal.captureOrder(orderId);
+    const capture = order.purchase_units?.[0]?.payments?.captures?.[0];
+    if (order.status !== "COMPLETED" || !capture || capture.status !== "COMPLETED") {
+      throw new EscrowError(`Capture not completed (order ${order.status}, capture ${capture?.status ?? "missing"})`, 502);
+    }
+    return updateProject(projectId, (p, ms) => {
+      for (const m of ms) {
+        if (m.orderId !== orderId || m.status !== "awaiting_funding") continue;
+        m.captureId = capture.id;
+        m.status = "funded";
+        logEvent(m, "funded", `capture ${capture.id} (plan funding)`);
+      }
+      logEvent(p, "plan_funded", `capture ${capture.id}`);
+    });
   });
 }
 
@@ -106,8 +167,9 @@ export function settle(id: string, freelancerShareCents: number, reason: string)
       throw new EscrowError(`Freelancer share must be between 0 and ${m.amountCents} cents`);
     }
     const project = await projectOf(m);
-    if (freelancerShareCents > 0 && !project.freelancerEmail) {
-      throw new EscrowError("The project has no freelancer PayPal email");
+    const payee = payeeOf(m, project);
+    if (freelancerShareCents > 0 && !payee) {
+      throw new EscrowError(m.providerId ? `No PayPal account configured for provider ${m.providerId}` : "The project has no freelancer PayPal email");
     }
 
     const refundCents = m.amountCents - freelancerShareCents;
@@ -118,7 +180,7 @@ export function settle(id: string, freelancerShareCents: number, reason: string)
       const payoutCents = freelancerShareCents - feeCents;
       const batch = await paypal.createPayout({
         senderBatchId: `ms-${m.id}-${m.captureId}`,
-        receiverEmail: project.freelancerEmail,
+        receiverEmail: payee,
         amountCents: payoutCents,
         currency: m.currency,
         note: `Payment for "${m.title}" (${project.title}). ${reason}`.slice(0, 255),

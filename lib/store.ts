@@ -31,16 +31,64 @@ export type Project = {
   status: "proposed" | "active";
   approvals: Record<Role, boolean>;
   // SHA-256 hashes of each party's secret link token (see lib/access.ts).
-  access?: Record<Role, string>;
+  // In team mode every provider has its own link instead of one freelancer link.
+  access?: { client: string; freelancer?: string; providers?: Record<string, string> };
+  // "agreement": one freelancer, plan drafted from an agreement. "team": plan assembled from a goal.
+  mode?: "agreement" | "team";
+  goal?: Goal;
+  plan?: PlanMeta;
   agreement: string;
   issues: Issue[];
   createdAt: string;
   events: AuditEvent[];
 };
 
+export type Goal = {
+  text: string;
+  budgetCents: number;
+  deadline: string | null;
+  context: string;
+};
+
+/** A provider agent's answer to a request for an offer. */
+export type Offer = {
+  providerId: string;
+  scope: string;
+  accepted: boolean;
+  priceCents: number;
+  conditions: string[];
+  deliverable: string;
+  durationDays: number;
+  note: string;
+};
+
+export type PlanRevision = {
+  version: number;
+  at: string;
+  reason: string;
+  rationale: string;
+  changes: string[];
+};
+
+export type PlanMeta = {
+  version: number;
+  rationale: string;
+  leftoverPolicy: string;
+  offers: Offer[];
+  /** Planner and provider-agent steps, shown live while the plan is assembled. */
+  trace: TraceEntry[];
+  history: PlanRevision[];
+  /** Providers that dropped out; they are not asked again. */
+  unavailable: string[];
+  orderId?: string;
+};
+
 export type Milestone = {
   id: string;
   projectId: string;
+  // Team mode: who delivers and gets paid for this milestone, and what must be done first.
+  providerId?: string;
+  dependsOn?: string[];
   title: string;
   criteria: string[];
   evidence: string;
