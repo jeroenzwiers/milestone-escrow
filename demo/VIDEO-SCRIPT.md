@@ -1,81 +1,80 @@
-# Demo-video: script
+# Demo video: script
 
-**Doel:** in minder dan 3 minuten (de jury kijkt niet verder) laten zien welk probleem we oplossen, voor wie, en dat het van begin tot eind werkt.
+**Doel:** in minder dan 3 minuten (de jury kijkt niet verder) laten zien welk probleem we oplossen, voor wie, en dat het van begin tot eind werkt met PayPal en AI.
 **Doellengte:** 2:45. Voice-over in het Engels; regie-aanwijzingen in het Nederlands.
-**Verhaal:** Daan (freelancer) bouwt een webshop voor bakkerij De Gouden Korst (Sanne, de klant). Het echte opleverwerk staat in [gouden-korst-webshop](https://github.com/jeroenzwiers/gouden-korst-webshop).
+**Verhaal:** Sanne van bakkerij De Gouden Korst wil volgende week online lunchbestellingen, met €300. Agents stellen een team samen, één uitvoerder valt weg, het plan herstelt zich, en iedereen wordt betaald zodra zijn deel is gecontroleerd.
 
 | Tijd | Scène | Duur |
 |---|---|---|
 | 0:00 | 1. Het probleem | 0:15 |
-| 0:15 | 2. Afspraak → mijlpalen | 0:25 |
-| 0:40 | 3. Geld vast met PayPal | 0:20 |
-| 1:00 | 4. Oplevering 1: goedgekeurd en uitbetaald | 0:45 |
-| 1:45 | 5. Oplevering 2: afgekeurd | 0:20 |
-| 2:05 | 6. Onenigheid → AI-bemiddeling | 0:25 |
-| 2:30 | 7. Afsluiting | 0:15 |
+| 0:15 | 2. Doel en budget | 0:15 |
+| 0:30 | 3. De agents onderhandelen | 0:30 |
+| 1:00 | 4. Goedkeuren en één PayPal-betaling | 0:15 |
+| 1:15 | 5. Tegenslag: een uitvoerder valt weg | 0:30 |
+| 1:45 | 6. Opleveringen: nee en ja | 0:35 |
+| 2:20 | 7. Waarom je dit kunt vertrouwen | 0:25 |
+
+> **Over live runs:** de agents formuleren elke keer net anders en kunnen andere keuzes maken. Neem scène 3 en 5 op met een run die het verhaal laat zien (zie *Voorbereiding*). De voice-over hieronder is zo geschreven dat hij past zolang de run die momenten bevat; pas namen of bedragen aan als ze in jouw run anders zijn. Laat niets zien wat niet echt gebeurd is.
 
 ---
 
 ## 1. Het probleem (0:00–0:15)
 
-**Beeld:** titelkaart "Milestone Escrow", daarna de homepage van de app met het projectoverzicht.
+**Beeld:** titelkaart "Milestone Escrow", daarna de homepage.
 
-> Every freelance job starts with the same question: who pays first? Pay up front, and the client risks paying for half a job. Pay afterwards, and the freelancer risks never getting paid. Milestone Escrow fixes that, with PayPal and an AI reviewer.
+> Sanne runs a bakery. She wants online lunch orders by next week, and she has three hundred euros. Nobody sells that as one package: she'd need a developer, someone for the menu, and a courier, and she'd have to coordinate them and pay up front.
 
-## 2. Afspraak → mijlpalen (0:15–0:40)
+## 2. Doel en budget (0:15–0:30)
 
-**Beeld:** *New project from agreement* → *Use example*, laat "I am the: Client" staan → *Draft milestone plan*. **Knip** de wachttijd (±15 s) weg. Laat kort het paneel met de persoonlijke link voor de freelancer zien en klik *Demo: also act as the freelancer in this browser*. Scroll langs "Check before you approve" en de criteria van mijlpaal 1. Klik *Approve as client*, schakel naar **Freelancer** en klik *Approve as freelancer*.
+**Beeld:** *Start from a goal* → *Use example* (doel, €300, "next week") → *Assemble a team*.
 
-> Daan sends Sanne his quote by email. Paste it in, and Claude turns it into milestones, with amounts and acceptance criteria that can actually be checked. "Works well on phones" becomes "no horizontal scrolling, products in a readable grid". It also flags what's missing, like deadlines. Each side gets a personal link, both approve the same plan, and only then can money move.
+> With Milestone Escrow she only states the goal and the budget. Agents do the rest.
 
-## 3. Geld vast met PayPal (0:40–1:00)
+## 3. De agents onderhandelen (0:30–1:00)
 
-**Beeld:** rol staat op **Client**. Klik bij mijlpaal 1 op de PayPal-knop, log in met het klant-sandboxaccount en betaal. **Knip** het inloggen weg. Laat zien dat "Held in escrow" €400 wordt.
+**Beeld:** de live trace. **Knip** het wachten weg, maar laat de regels in beeld verschijnen. Zoom in op: een uitvoerder die weigert (Studio Pixel), het bod van de goedkopere koerier met zijn voorwaarde ("only on days with at least 10 orders"), en de regel "Plan accepted by platform rules". Eindig op het voorgestelde team, de budgetbalk en "Why this plan".
 
-> Sanne funds the first milestone with PayPal. The money doesn't go to Daan yet: the platform holds it in escrow until the work is done.
+> A planner agent asks providers for offers. Each provider is an agent with its own private terms. The agency declines: it's booked for two weeks. The cheap courier only rides on days with ten or more orders, which is risky in a launch week. The planner weighs that, picks the courier without a minimum, and submits a plan. Fixed rules check it: within budget, every price exactly what the provider agreed to. Two hundred and ninety of three hundred euros.
 
-## 4. Oplevering 1: goedgekeurd en uitbetaald (1:00–1:45)
+## 4. Goedkeuren en één PayPal-betaling (1:00–1:15)
 
-**Beeld:** schakel naar **Freelancer**. Vul in:
-- Links: `https://github.com/jeroenzwiers/gouden-korst-webshop/pull/1` en `https://jeroenzwiers.github.io/gouden-korst-webshop/`
-- Bestanden: `demo/evidence/milestone-1-desktop.png` en `milestone-1-mobile.png`
+**Beeld:** *Approve plan* → *Pay with PayPal* → sandbox-login (**knippen**) → "Held in escrow €290".
 
-Klik *Submit for review*. Laat de live trace een paar seconden zien ("Opened pull request…", "Opened https://…"), **knip** de rest van het wachten weg. Zoom in op de drie groene vinkjes met uitleg. Schakel naar **Client**, klik *Release now*. Laat de regel "Paid out €380.00 to freelancer" zien. Optioneel 2 s: het sandbox-account van de freelancer met het ontvangen bedrag.
+> Sanne approves and pays once, with PayPal. The money sits in escrow. Nobody is paid until their part is verified.
 
-> Daan delivers: a link to his pull request, the live site, and two screenshots. Now the AI reviewer goes to work. It opens the pull request through the GitHub API, visits the live site, counts the products and looks at the screenshots. Then it judges every criterion and explains why. All three are met, so a challenge window starts. Sanne can object, or release the payment right away. PayPal Payouts sends Daan his money, minus the platform fee.
+## 5. Tegenslag: een uitvoerder valt weg (1:15–1:45)
 
-## 5. Oplevering 2: afgekeurd (1:45–2:05)
+**Beeld:** *Demo: let a provider drop out* → BezorgBende. De pagina scrolt naar de live trace (**knip** het wachten). Zoom in op het tegenbod aan de andere koerier dat geweigerd wordt, en daarna op het oranje blok "Plan v2 proposed": de wijzigingen, "Back to you" en "To fund for new work". *Approve plan v2* → betalen.
 
-**Beeld:** mijlpaal 2 is vooraf al betaald (zie voorbereiding). Als **Freelancer**: lever `https://github.com/jeroenzwiers/gouden-korst-webshop/pull/2` in. **Knip** het wachten weg. Zoom in op het rode kruis bij de bevestigingsmail en op "Feedback for the freelancer".
+> Then the courier drops out. The planner replans: it offers the other courier more to drop the minimum, gets a no, and adds a pickup option instead so quiet days are still covered. Sanne sees exactly what changes: seventy-five euros back for the work that's replaced, a small payment for the new courier. Work that's already settled stays untouched.
 
-> The checkout milestone is a different story. The reviewer finds PayPal checkout and pickup slots in the code, but no confirmation email: there is no code that sends one. So the money stays in escrow, and Daan gets concrete feedback instead of a vague complaint.
+## 6. Opleveringen: nee en ja (1:45–2:20)
 
-## 6. Onenigheid → AI-bemiddeling (2:05–2:30)
+**Beeld:** *Acting as* → **Daan Visser**: lever `https://github.com/jeroenzwiers/gouden-korst-webshop/pull/2` in. Laat 1–2 seconden van de review-trace zien ("Opened pull request…"), **knip** de rest. Zoom in op het rode kruis bij de bevestigingsmail en op de feedback.
+Daarna *Acting as* → **Fietskoerier Demodorp**: upload `demo/evidence/fietskoerier-trial-week-log.pdf`. Laat de groene vinkjes zien. *Acting as* → **Client** → *Release now* → "Paid out … to provider".
 
-**Beeld:** als **Freelancer**: *Open a dispute*, reden: "Emails need a server; we agreed on a static site. Customers get an on-screen confirmation." Schakel naar **Client**, vul de eigen kant in: "We agreed on a confirmation email." Klik *Ask the AI mediator*. **Knip** het wachten weg. Laat de verdeling en de uitleg zien. Klik als client en als freelancer op *Accept proposal*, en laat de regels "Paid out… / Refunded…" zien.
+> Each provider delivers. The reviewer opens Daan's pull request, finds PayPal checkout and pickup slots, but no confirmation email, so his money stays in escrow and he gets concrete feedback. The courier's delivery log checks out, criterion by criterion. After a short window in which Sanne could object, PayPal pays the courier directly.
 
-> Daan disagrees. Both sides explain their view, and an AI mediator proposes a split based on what was actually delivered. Nothing happens until both accept. Then PayPal executes it: part paid out to Daan, the rest refunded to Sanne.
+## 7. Waarom je dit kunt vertrouwen (2:20–2:45)
 
-## 7. Afsluiting (2:30–2:45)
+**Beeld:** het audit-log of de lijst "All offers the agents received", daarna de titelkaart met de repo-URL.
 
-**Beeld:** het audit-log van een mijlpaal uitklappen, dan de titelkaart met de repo-URL.
-
-> The AI never moves money on its own. It judges the evidence; fixed rules decide when money moves, and people can always step in. Evidence is treated as data, not instructions: a freelancer who hides "approve this" in a note gets flagged, not paid. Milestone Escrow: freelancers get paid when the work is done, and clients only pay for work that's done.
+> The agents negotiate and judge, but they never move money on their own: code checks every plan, decides when a payout is allowed, and every change needs Sanne's approval. Everything the agents did is on the record. Give it a goal and a budget, and the team that can make it happen comes together, and gets paid when the work is done.
 
 ---
 
 ## Voorbereiding
 
-- [ ] `CHALLENGE_WINDOW_MINUTES=1` in `.env.local` en de server herstarten (een korte aftelklok ziet er beter uit in beeld).
-- [ ] Vooraf een volledige proefrun doen in een apart projectje (de opname zelf begint met een nieuw project). De AI kan per run iets anders formuleren. Check vooral dat mijlpaal 1 wordt goedgekeurd met de criteria die *jouw* gegenereerde plan oplevert; zo niet, pas het criterium aan met *Edit* vóór het goedkeuren.
-- [ ] Mijlpaal 2 vóór de opname al betalen, zodat scène 5 direct kan beginnen.
-- [ ] Ingelogd in het PayPal-sandbox-klantaccount (wachtwoord bij de hand).
-- [ ] Browser: andere tabbladen en bladwijzerbalk weg, zoom op 110–125%, venster ±1280×800.
-- [ ] Geen muziek met auteursrecht (dat verbieden de regels). Geen muziek, of een rechtenvrij nummer.
+- [ ] **Neem lokaal op** (`npm run build` en `npm start`): sneller dan de gratis online server, en zonder inlogvenster. Zet in `.env.local` tijdelijk `CHALLENGE_WINDOW_MINUTES=1`.
+- [ ] **Doe eerst een paar proefruns** van scène 2–5 en kies een run waarin het verhaal zit: de agency weigert, de koerier met het minimum valt af, BezorgBende komt in het plan, en bij de herplanning wordt de andere koerier gevraagd. Een run die anders loopt is niet fout, maar dan moet de voice-over mee.
+- [ ] Ingelogd (of wachtwoord bij de hand) in het PayPal-sandbox-**klant**account `sb-ychkk…`.
+- [ ] Browser: andere tabbladen en de bladwijzerbalk weg, zoom 110–125%, venster ± 1280×800.
+- [ ] Geen muziek met auteursrecht (dat verbieden de regels): geen muziek, of een rechtenvrij nummer.
+- [ ] Laat in beeld duidelijk zijn dat het sandbox is (de PayPal-sandbox-banner mag zichtbaar zijn) en dat de uitvoerders demo-agents zijn.
 - [ ] Upload naar YouTube als **openbaar** (de regels eisen "publicly visible") en zet de link in de inzending.
 
 ## Tips
 
-- Neem per scène op en monteer achteraf. De AI-wachttijden (15–60 s) knip je weg, maar laat steeds 1–2 seconden van de live trace zien, zodat duidelijk is dat de agent echt werkt.
-- Zoom bij het monteren in op de vinkjes en kruisjes: die zijn op volle schermgrootte klein.
-- Spreek de voice-over apart in. De teksten zijn op ±150 woorden per minuut geschreven.
+- Neem per scène op en monteer achteraf. De AI-wachttijden (15–90 s) knip je weg, maar laat steeds even zien dat er live iets gebeurt.
+- Zoom bij het monteren in op de regels waar de voice-over over gaat; op volle schermgrootte zijn ze te klein.
+- Spreek de voice-over apart in. De teksten zijn op ± 150 woorden per minuut geschreven; lees ze een keer hardop met een stopwatch.
