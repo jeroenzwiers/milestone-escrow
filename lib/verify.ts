@@ -94,17 +94,27 @@ export function decide(criteria: CriterionVerdict[]): Verification["decision"] {
   return "needs_human";
 }
 
-/** Make sure there is exactly one verdict per agreed criterion, in order. */
-function alignVerdicts(agreed: string[], given: VerdictInput["criteria"]): CriterionVerdict[] {
-  return agreed.map((criterion, i) => {
-    const match = given.find((g) => g.criterion.trim() === criterion.trim()) ?? given[i];
-    if (!match) {
+const normalize = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
+/**
+ * Exactly one verdict per agreed criterion, in order. Verdicts are matched on the
+ * criterion text only, never by position: a criterion the model skipped, renamed
+ * or reordered must not inherit another criterion's verdict, so it becomes
+ * "unclear" with zero confidence, which can never lead to an automatic payout.
+ */
+export function alignVerdicts(agreed: string[], given: { criterion: string; verdict: CriterionVerdict["verdict"]; confidence: number; explanation: string; evidenceRefs: string[] }[]): CriterionVerdict[] {
+  const used = new Set<number>();
+  return agreed.map((criterion) => {
+    const idx = given.findIndex((g, i) => !used.has(i) && normalize(g.criterion) === normalize(criterion));
+    if (idx === -1) {
       return { criterion, verdict: "unclear", confidence: 0, explanation: "The reviewer gave no verdict for this criterion.", evidenceRefs: [] };
     }
+    used.add(idx);
+    const match = given[idx];
     return {
       criterion,
       verdict: match.verdict,
-      confidence: Math.min(1, Math.max(0, match.confidence)),
+      confidence: Number.isFinite(match.confidence) ? Math.min(1, Math.max(0, match.confidence)) : 0,
       explanation: match.explanation,
       evidenceRefs: match.evidenceRefs,
     };

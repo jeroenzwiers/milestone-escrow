@@ -14,7 +14,7 @@ export class EvidenceError extends Error {}
 
 // ---------- SSRF guard ----------
 
-function isPrivateAddress(ip: string): boolean {
+export function isPrivateAddress(ip: string): boolean {
   if (ip.includes(":")) {
     const v = ip.toLowerCase();
     if (v.startsWith("::ffff:")) return isPrivateAddress(v.slice(7));
@@ -32,7 +32,7 @@ function isPrivateAddress(ip: string): boolean {
   );
 }
 
-async function assertPublicUrl(raw: string): Promise<URL> {
+export async function assertPublicUrl(raw: string): Promise<URL> {
   let url: URL;
   try {
     url = new URL(raw);

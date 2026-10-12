@@ -108,7 +108,7 @@ export type Dispute = {
 
 export type ProjectWithMilestones = Project & { milestones: Milestone[] };
 
-const DB_FILE = path.join(process.cwd(), "data", "db.json");
+const DB_FILE = path.join(process.env.DATA_DIR ?? path.join(process.cwd(), "data"), "db.json");
 
 type Db = { projects: Project[]; milestones: Milestone[] };
 

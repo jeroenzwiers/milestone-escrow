@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
     "sandbox:check": "tsx --env-file-if-exists=.env.local scripts/sandbox-check.ts",
     "sandbox:e2e": "tsx --env-file-if-exists=.env.local scripts/sandbox-e2e.ts",
     "ai:extract": "tsx --env-file-if-exists=.env.local scripts/ai-extract.ts",

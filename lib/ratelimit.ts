@@ -17,7 +17,18 @@ function take(key: string, limit: number, windowMs: number): boolean {
   return true;
 }
 
+// Number of reverse proxies in front of the app that append to X-Forwarded-For
+// (1 on Render). Entries to the left of those were sent by the client and can be forged.
+const TRUSTED_PROXY_HOPS = Number(process.env.TRUSTED_PROXY_HOPS ?? 0);
+
+export function clientIp(forwardedFor: string | null, trustedHops = TRUSTED_PROXY_HOPS): string {
+  if (!forwardedFor || trustedHops <= 0) return "direct";
+  const hops = forwardedFor.split(",").map((s) => s.trim()).filter(Boolean);
+  // The rightmost entry is added by the closest trusted proxy and is the address it saw.
+  return hops[hops.length - trustedHops] ?? hops[0] ?? "direct";
+}
+
 export function allowAiCall(req: Request): boolean {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
+  const ip = clientIp(req.headers.get("x-forwarded-for"));
   return take(`ip:${ip}`, PER_IP_PER_HOUR, 3_600_000) && take("global", GLOBAL_PER_DAY, 86_400_000);
 }

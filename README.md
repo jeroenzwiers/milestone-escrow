@@ -53,6 +53,7 @@ Requires Node 20+, a PayPal developer account and an Anthropic API key.
    npm run sandbox:e2e          # pay → capture → 70% payout → 30% refund, against the real sandbox
    npm run ai:extract           # agreement → milestone plan on the demo email (needs ANTHROPIC_API_KEY)
    npm run ai:verify            # verification agent on a sample delivery (INJECT=1 for an injection attempt)
+   npm test                     # unit tests: payout policy, money flow, disputes, webhooks, SSRF guard (no accounts needed)
    npm run dev                  # http://localhost:3000
    ```
 4. Optional: once deployed, add a webhook for `https://<host>/api/webhooks/paypal` in the PayPal dashboard and set `PAYPAL_WEBHOOK_ID`. Locally the app polls payout status instead.
