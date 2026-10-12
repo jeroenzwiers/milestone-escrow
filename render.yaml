@@ -22,6 +22,12 @@ services:
         sync: false
       - key: FREELANCER_PAYPAL_EMAIL
         sync: false
+      - key: PROVIDER_NOOR_EMAIL
+        sync: false
+      - key: PROVIDER_FIETSKOERIER_EMAIL
+        sync: false
+      - key: PROVIDER_BEZORGBENDE_EMAIL
+        sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: ANTHROPIC_WORKSPACE_ID
