@@ -81,6 +81,9 @@ export type PlanMeta = {
   /** Providers that dropped out; they are not asked again. */
   unavailable: string[];
   orderId?: string;
+  /** "planning" while the agents work in the background. */
+  state?: "planning" | "ready" | "failed";
+  error?: string;
 };
 
 export type Milestone = {
@@ -196,6 +199,11 @@ export function updateMilestone(id: string, fn: (m: Milestone) => void): Promise
     fn(m as Milestone);
     return m as Milestone;
   });
+}
+
+/** Replace a project's milestones, e.g. with a newly accepted team plan. */
+export function replaceProjectMilestones(projectId: string, milestones: Milestone[]): Promise<void> {
+  return backend.setMilestones(projectId, milestones);
 }
 
 /** Replace all data with the demo scenario under fixed ids. Used by tests. */

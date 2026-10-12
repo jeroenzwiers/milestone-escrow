@@ -18,6 +18,8 @@ export interface Backend {
   mutateProject<T>(id: string, fn: (project: ProjectDoc, milestones: MilestoneDoc[]) => T): Promise<T>;
   mutateMilestone<T>(id: string, fn: (milestone: MilestoneDoc) => T): Promise<T>;
   replaceAll(projects: ProjectDoc[], milestones: MilestoneDoc[]): Promise<void>;
+  /** Replace all milestones of one project, in the given order. */
+  setMilestones(projectId: string, milestones: MilestoneDoc[]): Promise<void>;
   putFile(key: string, file: StoredFile): Promise<void>;
   getFile(key: string): Promise<StoredFile | undefined>;
   /** True the first time an id is marked; used for webhook idempotency across restarts. */
@@ -106,6 +108,14 @@ class FileBackend implements Backend {
 
   replaceAll(projects: ProjectDoc[], milestones: MilestoneDoc[]) {
     return this.exclusive(() => this.save({ projects, milestones }));
+  }
+
+  setMilestones(projectId: string, milestones: MilestoneDoc[]) {
+    return this.exclusive(async () => {
+      const db = await this.load();
+      db.milestones = [...db.milestones.filter((m) => m.projectId !== projectId), ...milestones];
+      await this.save(db);
+    });
   }
 
   private filePath(key: string) {
@@ -245,6 +255,17 @@ class SqlBackend implements Backend {
         for (const [i, m] of own.entries()) {
           await q("INSERT INTO milestones (id, project_id, position, doc) VALUES ($1, $2, $3, $4::jsonb)", [m.id, p.id, i, JSON.stringify(m)]);
         }
+      }
+    });
+  }
+
+  async setMilestones(projectId: string, milestones: MilestoneDoc[]) {
+    await this.ready;
+    await this.db.transaction(async (q) => {
+      await q("SELECT id FROM projects WHERE id = $1 FOR UPDATE", [projectId]);
+      await q("DELETE FROM milestones WHERE project_id = $1", [projectId]);
+      for (const [i, m] of milestones.entries()) {
+        await q("INSERT INTO milestones (id, project_id, position, doc) VALUES ($1, $2, $3, $4::jsonb)", [m.id, projectId, i, JSON.stringify(m)]);
       }
     });
   }
