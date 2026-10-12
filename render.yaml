@@ -1,0 +1,43 @@
+# Render blueprint for the hosted demo (free web service in Frankfurt, next to the Neon database).
+# Secrets are marked sync: false and are entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: milestone-escrow
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: DATABASE_URL
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+        sync: false
+      - key: FREELANCER_PAYPAL_EMAIL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_WORKSPACE_ID
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: PAYPAL_API_BASE
+        value: https://api-m.sandbox.paypal.com
+      - key: CURRENCY
+        value: EUR
+      - key: PLATFORM_FEE_PERCENT
+        value: "5"
+      - key: CHALLENGE_WINDOW_MINUTES
+        value: "3"
+      # Render's proxy appends the client address to X-Forwarded-For.
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
+      - key: FILE_URL_SECRET
+        generateValue: true

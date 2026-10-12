@@ -14,7 +14,8 @@
     "sandbox:e2e": "tsx --env-file-if-exists=.env.local scripts/sandbox-e2e.ts",
     "ai:extract": "tsx --env-file-if-exists=.env.local scripts/ai-extract.ts",
     "ai:verify": "tsx --env-file-if-exists=.env.local scripts/ai-verify.ts",
-    "test:pg": "node scripts/test-pglite.mjs"
+    "test:pg": "node scripts/test-pglite.mjs",
+    "db:check": "tsx --env-file-if-exists=.env.local scripts/db-check.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",

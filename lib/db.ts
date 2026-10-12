@@ -275,7 +275,9 @@ class SqlBackend implements Backend {
 async function pgDriver(url: string): Promise<Driver> {
   const { Pool } = await import("pg");
   // Neon closes idle connections; keep the pool small and let it reconnect.
-  const pool = new Pool({ connectionString: url, max: 5, idleTimeoutMillis: 30_000 });
+  // Keep full certificate verification explicit; pg will weaken "sslmode=require" in a future major version.
+  const connectionString = url.replace(/([?&]sslmode=)(prefer|require|verify-ca)(?=&|$)/, "$1verify-full");
+  const pool = new Pool({ connectionString, max: 5, idleTimeoutMillis: 30_000 });
   pool.on("error", (err) => console.error("postgres pool", err));
   const query: Query = (text, params) => pool.query(text, params as unknown[]) as never;
   return {

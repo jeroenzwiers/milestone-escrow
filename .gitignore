@@ -11,3 +11,4 @@ data/*.json
 
 # Personal pitch material, not part of the submission
 *-pitch.pdf
+.neon
