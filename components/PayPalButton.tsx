@@ -35,7 +35,15 @@ function loadPayPal(): Promise<PayPalSdk> {
   return sdkPromise;
 }
 
-export function PayPalButton({ milestoneId, onError, onFunded }: { milestoneId: string; onError: (msg: string) => void; onFunded: () => void }) {
+/** PayPal button for one milestone (`/api/milestones/:id/…`) or a whole team plan (`/api/projects/:id/fund…`). */
+export function PayPalButton({
+  milestoneId,
+  projectId,
+  onError,
+  onFunded,
+}: { milestoneId?: string; projectId?: string; onError: (msg: string) => void; onFunded: () => void }) {
+  const orderPath = projectId ? `/api/projects/${projectId}/fund` : `/api/milestones/${milestoneId}/order`;
+  const capturePath = projectId ? `/api/projects/${projectId}/fund/capture` : `/api/milestones/${milestoneId}/capture`;
   const slot = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +56,7 @@ export function PayPalButton({ milestoneId, onError, onFunded }: { milestoneId: 
         sdk.createPayPalOneTimePaymentSession({
           onApprove: async ({ orderId }) => {
             try {
-              await api(`/api/milestones/${milestoneId}/capture`, "POST", { orderId });
+              await api(capturePath, "POST", { orderId });
               onFunded();
             } catch (e) {
               onError((e as Error).message);
@@ -61,7 +69,7 @@ export function PayPalButton({ milestoneId, onError, onFunded }: { milestoneId: 
         if (cancelled || !slot.current) return;
         // The order promise is passed in synchronously so the popup isn't blocked.
         button.addEventListener("click", () => {
-          session.start({ presentationMode: "auto" }, api<{ orderId: string }>(`/api/milestones/${milestoneId}/order`, "POST")).catch((e: Error) => onError(e.message));
+          session.start({ presentationMode: "auto" }, api<{ orderId: string }>(orderPath, "POST")).catch((e: Error) => onError(e.message));
         });
         slot.current.appendChild(button);
       })
@@ -71,7 +79,7 @@ export function PayPalButton({ milestoneId, onError, onFunded }: { milestoneId: 
       cancelled = true;
       button.remove();
     };
-  }, [milestoneId, onError, onFunded]);
+  }, [orderPath, capturePath, onError, onFunded]);
 
   return <div className="paypal-slot actions" ref={slot} />;
 }

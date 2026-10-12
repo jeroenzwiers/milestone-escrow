@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AuditLog, Criteria, MilestoneCard } from "@/components/MilestoneCard";
-import { api, linkFor, loadInvite, loadTokens, money, saveInvite, saveToken, setActiveToken, sumCents, type Invite, type Tokens } from "@/lib/client";
+import { PayPalButton } from "@/components/PayPalButton";
+import { GoalCard, NegotiationTrace, TeamPlanView, type ProviderInfo } from "@/components/TeamPlan";
+import { api, linkFor, loadInvite, loadTokens, money, partyOf, saveInvite, saveToken, setActiveToken, sumCents, type Invite, type Tokens } from "@/lib/client";
 import type { Milestone, ProjectWithMilestones, Role } from "@/lib/store";
 
-type ProjectView = ProjectWithMilestones & { viewerRole: Role };
+type ProjectView = ProjectWithMilestones & { viewerRole: Role; viewerProviderId: string | null; providers: ProviderInfo[] };
 
-const rolePrefKey = (id: string) => `escrow:role:${id}`;
+const partyPrefKey = (id: string) => `escrow:party:${id}`;
+const partyKeyOf = (p: ProjectView) => (p.viewerProviderId ? `provider:${p.viewerProviderId}` : p.viewerRole);
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +20,7 @@ export default function ProjectPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [tokens, setTokens] = useState<Tokens | null>(null); // null until read from this browser
-  const [role, setRole] = useState<Role | null>(null);
+  const [party, setParty] = useState<string | null>(null); // "client", "freelancer" or "provider:<id>"
   const [invite, setInvite] = useState<Invite | null>(null);
 
   // Arriving via a personal link (…#t=token): the token sits in the URL fragment, which browsers
@@ -25,11 +28,11 @@ export default function ProjectPage() {
   useEffect(() => {
     (async () => {
       const t = new URLSearchParams(window.location.hash.slice(1)).get("t");
-      let fromLink: Role | null = null;
+      let fromLink: string | null = null;
       if (t) {
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
         try {
-          fromLink = (await api<ProjectView>(`/api/projects/${id}`, "GET", undefined, t)).viewerRole;
+          fromLink = partyKeyOf(await api<ProjectView>(`/api/projects/${id}`, "GET", undefined, t));
           saveToken(id, fromLink, t);
         } catch (e) {
           setError((e as Error).message);
@@ -38,16 +41,17 @@ export default function ProjectPage() {
       const saved = loadTokens(id);
       let pref: string | null = null;
       try {
-        pref = localStorage.getItem(rolePrefKey(id));
+        pref = localStorage.getItem(partyPrefKey(id));
       } catch {}
-      const preferred = pref === "client" || pref === "freelancer" ? (saved[pref] ? pref : null) : null;
       setTokens(saved);
       setInvite(loadInvite(id));
-      setRole(fromLink ?? preferred ?? (saved.client ? "client" : saved.freelancer ? "freelancer" : null));
+      setParty(fromLink ?? (pref && saved[pref] ? pref : null) ?? (saved.client ? "client" : (Object.keys(saved)[0] ?? null)));
     })();
   }, [id]);
 
-  const token = role && tokens ? (tokens[role] ?? null) : null;
+  const token = party && tokens ? (tokens[party] ?? null) : null;
+  const role: Role | null = party ? partyOf(party).role : null;
+  const myProviderId = party ? (partyOf(party).providerId ?? null) : null;
   // Every API call from this page (and its components) acts as the selected party.
   setActiveToken(token);
 
@@ -63,15 +67,17 @@ export default function ProjectPage() {
     refresh();
   }, [refresh]);
 
-  function switchRole(r: Role) {
-    setRole(r);
+  function switchParty(key: string) {
+    setParty(key);
     try {
-      localStorage.setItem(rolePrefKey(id), r);
+      localStorage.setItem(partyPrefKey(id), key);
     } catch {}
   }
 
-  // Follow the AI review and the challenge-window countdown without reloading.
-  const live = project?.milestones.some((m) => m.status === "in_review" || m.status === "verified" || m.payout?.status === "PENDING");
+  // Follow the agents, the AI review and the challenge-window countdown without reloading.
+  const live =
+    project?.plan?.state === "planning" ||
+    project?.milestones.some((m) => m.status === "in_review" || m.status === "verified" || m.payout?.status === "PENDING");
   useEffect(() => {
     if (!live) return;
     const t = setInterval(refresh, 2500);
@@ -118,18 +124,24 @@ export default function ProjectPage() {
   const { currency, milestones } = project;
   const total = sumCents(milestones);
   const heldStatuses: Milestone["status"][] = ["funded", "in_review", "changes_requested", "needs_review", "verified", "disputed"];
+  const isTeam = project.mode === "team";
+  const providerName = (pid?: string) => project.providers.find((p) => p.id === pid)?.name ?? pid ?? "";
+  const unfunded = milestones.filter((m) => m.status === "draft" || m.status === "awaiting_funding");
+  // In team mode, only offer the parties that actually have a role in the current plan.
+  const inPlan = new Set(milestones.map((m) => m.providerId).filter(Boolean));
+  const switchable = Object.keys(tokens ?? {}).filter((k) => !isTeam || k === "client" || inPlan.has(partyOf(k).providerId));
 
   return (
     <main>
       <Link href="/" className="back">← Projects</Link>
       <header>
         <div>
-          <p className="eyebrow">{[project.clientName, project.freelancerName].filter(Boolean).join(" → ") || "Project"}</p>
+          <p className="eyebrow">{isTeam ? "Team plan" : [project.clientName, project.freelancerName].filter(Boolean).join(" → ") || "Project"}</p>
           <h1>{project.title}</h1>
         </div>
-        <RoleSwitch role={role} available={tokens ?? {}} onChange={switchRole} />
+        <PartySwitch party={party!} available={switchable} label={(k) => (k === "client" ? "Client" : k === "freelancer" ? "Freelancer" : providerName(partyOf(k).providerId))} onChange={switchParty} />
         <div className="totals">
-          <div><span className="muted small">Total</span><strong>{money(total, currency)}</strong></div>
+          <div><span className="muted small">{isTeam ? "Planned" : "Total"}</span><strong>{money(total, currency)}</strong></div>
           {project.status === "active" && (
             <>
               <div><span className="muted small">Held in escrow</span><strong>{money(sumCents(milestones, (m) => heldStatuses.includes(m.status)), currency)}</strong></div>
@@ -158,7 +170,43 @@ export default function ProjectPage() {
         />
       )}
 
-      {project.status === "proposed" ? (
+      {isTeam && <GoalCard project={project} />}
+
+      {isTeam && project.plan?.state === "planning" && (
+        <section className="card">
+          <NegotiationTrace trace={project.plan.trace} live />
+        </section>
+      )}
+
+      {isTeam && project.plan?.state === "failed" && (
+        <section className="card">
+          <div className="notice warn">
+            <strong>No plan could be assembled.</strong> {project.plan.error}
+          </div>
+          <NegotiationTrace trace={project.plan.trace} live={false} />
+        </section>
+      )}
+
+      {isTeam && project.plan?.state === "ready" && project.status === "proposed" && (
+        <>
+          <ApprovalBar project={project} role={role} busy={busy !== null} team onApprove={() => run("approve", () => api(`/api/projects/${id}/approve`, "POST"))} />
+          <TeamPlanView project={project} providers={project.providers} />
+        </>
+      )}
+
+      {isTeam && project.status === "active" && unfunded.length > 0 && (
+        <section className="card fund-plan">
+          <div>
+            <h2>Fund the plan</h2>
+            <p className="small muted">
+              One payment of <strong>{money(sumCents(unfunded), currency)}</strong> into escrow covers every milestone. Each provider is paid only after their delivery is verified; anything not paid out comes back to you.
+            </p>
+          </div>
+          {role === "client" ? <PayPalButton projectId={id} onError={setError} onFunded={refresh} /> : <p className="hint">Waiting for the client to fund the plan.</p>}
+        </section>
+      )}
+
+      {!isTeam && project.status === "proposed" && (
         <>
           <ApprovalBar project={project} role={role} busy={busy !== null} onApprove={() => run(`approve-${role}`, () => api(`/api/projects/${id}/approve`, "POST"))} />
           <Issues project={project} />
@@ -172,10 +220,29 @@ export default function ProjectPage() {
             </details>
           )}
         </>
-      ) : (
+      )}
+
+      {project.status === "active" &&
         milestones.map((m, i) => (
-          <MilestoneCard key={m.id} m={m} index={i} role={role} busy={busy === m.id} run={(fn) => run(m.id, fn)} onError={setError} onChanged={refresh} />
-        ))
+          <MilestoneCard
+            key={m.id}
+            m={m}
+            index={i}
+            role={role}
+            busy={busy === m.id}
+            run={(fn) => run(m.id, fn)}
+            onError={setError}
+            onChanged={refresh}
+            team={isTeam ? { providerName: providerName(m.providerId), isMine: m.providerId === myProviderId, after: (m.dependsOn ?? []).map((d) => milestones.find((x) => x.id === d)?.title ?? d) } : undefined}
+          />
+        ))}
+
+      {isTeam && project.status === "active" && project.plan && (
+        <details className="card">
+          <summary className="muted small">Plan v{project.plan.version}: why this team</summary>
+          <p className="small" style={{ whiteSpace: "pre-wrap" }}>{project.plan.rationale}</p>
+          <NegotiationTrace trace={project.plan.trace} live={false} />
+        </details>
       )}
 
       <AuditLog events={project.events} />
@@ -183,22 +250,21 @@ export default function ProjectPage() {
   );
 }
 
-/** Switch between parties only when this browser holds both links (the demo). */
-function RoleSwitch({ role, available, onChange }: { role: Role; available: Tokens; onChange: (r: Role) => void }) {
-  const roles = (["client", "freelancer"] as const).filter((r) => available[r]);
-  if (roles.length < 2) {
+/** Switch between parties when this browser holds several links (the demo). */
+function PartySwitch({ party, available, label, onChange }: { party: string; available: string[]; label: (key: string) => string; onChange: (key: string) => void }) {
+  if (available.length < 2) {
     return (
       <span className="role-badge">
-        You are the <strong>{role}</strong>
+        You are <strong>{label(party)}</strong>
       </span>
     );
   }
   return (
     <div className="role-switch" role="group" aria-label="Acting as">
       <span className="muted small">Acting as</span>
-      {roles.map((r) => (
-        <button key={r} className={role === r ? "active" : ""} onClick={() => onChange(r)} aria-pressed={role === r}>
-          {r === "client" ? "Client" : "Freelancer"}
+      {available.map((k) => (
+        <button key={k} className={party === k ? "active" : ""} onClick={() => onChange(k)} aria-pressed={party === k}>
+          {label(k)}
         </button>
       ))}
     </div>
@@ -237,7 +303,26 @@ function InvitePanel({ projectId, invite, onOpenHere, onDone }: { projectId: str
   );
 }
 
-function ApprovalBar({ project, role, busy, onApprove }: { project: ProjectWithMilestones; role: Role; busy: boolean; onApprove: () => void }) {
+function ApprovalBar({ project, role, busy, onApprove, team }: { project: ProjectWithMilestones; role: Role; busy: boolean; onApprove: () => void; team?: boolean }) {
+  if (team) {
+    return (
+      <section className="card approval">
+        <div>
+          <h2>Approve this team</h2>
+          <p className="small muted">The providers already agreed through their agents. Once you approve, you fund the whole plan with one payment.</p>
+        </div>
+        <div className="parties">
+          {role === "client" ? (
+            <button className="primary" disabled={busy} onClick={onApprove}>
+              Approve plan
+            </button>
+          ) : (
+            <span className="pending">Waiting for the client</span>
+          )}
+        </div>
+      </section>
+    );
+  }
   const parties: { role: Role; label: string }[] = [
     { role: "client", label: project.clientName ?? "Client" },
     { role: "freelancer", label: project.freelancerName ?? "Freelancer" },

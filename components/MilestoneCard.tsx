@@ -25,6 +25,8 @@ const STATUS_LABEL: Record<Milestone["status"], string> = {
 const HELD = new Set<Milestone["status"]>(["funded", "changes_requested", "needs_review", "verified", "disputed"]);
 
 /** A milestone of an agreed project: fund, deliver, AI review, then release, split or refund. */
+export type TeamInfo = { providerName: string; isMine: boolean; after: string[] };
+
 export function MilestoneCard({
   m,
   index,
@@ -33,6 +35,7 @@ export function MilestoneCard({
   run,
   onError,
   onChanged,
+  team,
 }: {
   m: Milestone;
   index: number;
@@ -41,9 +44,13 @@ export function MilestoneCard({
   run: (fn: () => Promise<unknown>) => Promise<boolean>;
   onError: (msg: string) => void;
   onChanged: () => void;
+  /** Team mode: who delivers this milestone, and whether the viewer is that provider. */
+  team?: TeamInfo;
 }) {
   const latest = m.submissions?.at(-1);
   const fundable = m.status === "draft" || m.status === "awaiting_funding";
+  // In team mode a provider only delivers its own milestones; the plan is funded as a whole.
+  const canDeliver = role === "freelancer" && (!team || team.isMine);
 
   return (
     <section className={`card milestone ${m.status}`}>
@@ -55,6 +62,13 @@ export function MilestoneCard({
         </h2>
         <span className="amount">{money(m.amountCents, m.currency)}</span>
       </div>
+      {team && (
+        <p className="provider-line">
+          <span className="provider-chip">{team.providerName}</span>
+          {team.after.length > 0 && <span className="small muted">after {team.after.join(", ")}</span>}
+          {team.isMine && <span className="small mine">your milestone</span>}
+        </p>
+      )}
 
       {latest?.verification && m.status !== "in_review" ? (
         <VerificationPanel verification={latest.verification} />
@@ -66,16 +80,25 @@ export function MilestoneCard({
 
       {m.status === "in_review" && latest?.verification && <ReviewInProgress trace={latest.verification.trace} />}
 
-      {fundable && (role === "client" ? <PayPalButton milestoneId={m.id} onError={onError} onFunded={onChanged} /> : <p className="hint">Waiting for the client to fund this milestone.</p>)}
+      {fundable &&
+        (team ? (
+          <p className="hint">Funded together with the rest of the plan.</p>
+        ) : role === "client" ? (
+          <PayPalButton milestoneId={m.id} onError={onError} onFunded={onChanged} />
+        ) : (
+          <p className="hint">Waiting for the client to fund this milestone.</p>
+        ))}
 
       {(m.status === "funded" || m.status === "changes_requested") &&
-        (role === "freelancer" ? (
+        (canDeliver ? (
           <>
             <SubmitWorkForm milestone={m} onSubmitted={onChanged} />
             {m.status === "changes_requested" && <ContestVerdict m={m} busy={busy} run={run} />}
           </>
         ) : (
-          <p className="hint">{m.status === "funded" ? "Funds are held in escrow until the freelancer delivers." : "Waiting for the freelancer to resubmit."}</p>
+          <p className="hint">
+            {m.status === "funded" ? `Funds are held in escrow until ${team?.providerName ?? "the freelancer"} delivers.` : `Waiting for ${team?.providerName ?? "the freelancer"} to resubmit.`}
+          </p>
         ))}
 
       {m.status === "verified" && m.releaseAt && <ChallengeWindow m={m} role={role} busy={busy} run={run} />}

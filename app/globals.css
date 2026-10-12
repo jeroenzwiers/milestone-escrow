@@ -187,3 +187,39 @@ button.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
 .role-pick label { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; }
 .empty h2 { font-size: 20px; line-height: 1.3; }
 .empty p { margin: 10px 0 0; }
+
+/* Team mode */
+.goal { border-left: 4px solid var(--accent); }
+.goal .label { margin-top: 0; }
+.goal-text { font-size: 18px; margin: 4px 0 6px; }
+.negotiation ol { margin: 8px 0 0; padding-left: 22px; font-size: 14px; }
+.negotiation li { margin-bottom: 4px; color: var(--muted); }
+.negotiation li.t-offer { color: var(--text); }
+.negotiation li.t-counter { color: var(--warn); }
+.negotiation li.t-rejected { color: var(--bad); }
+.negotiation li.t-ok { color: var(--ok); font-weight: 600; }
+.negotiation li.t-start { color: var(--text); font-weight: 600; }
+.negotiation.live li:last-child { animation: fadein 0.4s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.budget { margin-top: 10px; }
+.budget-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 14px; }
+.member { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; }
+.member div { display: flex; flex-direction: column; }
+.member .kind { font-size: 20px; width: 28px; text-align: center; }
+ol.plan-steps { margin: 16px 0 0; padding-left: 22px; }
+ol.plan-steps > li { margin-bottom: 12px; }
+.step-head { display: flex; justify-content: space-between; gap: 12px; }
+ol.plan-steps p { margin: 2px 0 4px; }
+ol.plan-steps ul { margin: 0; padding-left: 18px; }
+.rationale { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.rationale .label { margin-top: 0; }
+ul.offers { padding-left: 18px; font-size: 14px; }
+ul.offers > li { margin-bottom: 8px; }
+ul.offers li.declined { opacity: 0.75; }
+ul.offers p { margin: 2px 0 0; }
+.fund-plan { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; border-color: var(--accent); }
+.fund-plan p { margin: 4px 0 0; max-width: 520px; }
+.provider-line { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 0; }
+.provider-chip { font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 99px; background: #eef0f3; }
+.mine { color: var(--accent); font-weight: 600; }

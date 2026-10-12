@@ -33,6 +33,12 @@ export function allowAiCall(req: Request): boolean {
   return take(`ip:${ip}`, PER_IP_PER_HOUR, 3_600_000) && take("global", GLOBAL_PER_DAY, 86_400_000);
 }
 
+/** A team plan takes many agent calls; cap plans and replans separately. */
+export function allowPlanning(req: Request): boolean {
+  const ip = clientIp(req.headers.get("x-forwarded-for"));
+  return take(`plan:${ip}`, Number(process.env.PLAN_LIMIT_PER_IP_PER_HOUR ?? 5), 3_600_000) && take("plan:global", Number(process.env.PLAN_LIMIT_PER_DAY ?? 40), 86_400_000);
+}
+
 /** Demo copies are cheap (no AI), but each one is stored; cap them per address. */
 export function allowDemoStart(req: Request): boolean {
   const ip = clientIp(req.headers.get("x-forwarded-for"));

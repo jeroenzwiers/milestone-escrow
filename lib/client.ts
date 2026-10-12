@@ -36,7 +36,13 @@ export const sumCents = <T extends { amountCents: number }>(items: T[], pred: (x
 // ---------- Link tokens kept in this browser ----------
 // Storage can be unavailable (private mode, blocked site data); everything degrades to "no saved links".
 
-export type Tokens = Partial<Record<Role, string>>;
+/** Link tokens per party: "client", "freelancer" or "provider:<id>" (team mode). */
+export type Tokens = Record<string, string>;
+
+export function partyOf(key: string): { role: Role; providerId?: string } {
+  if (key.startsWith("provider:")) return { role: "freelancer", providerId: key.slice("provider:".length) };
+  return { role: key === "client" ? "client" : "freelancer" };
+}
 const tokensKey = (projectId: string) => `escrow:tokens:${projectId}`;
 const inviteKey = (projectId: string) => `escrow:invite:${projectId}`;
 
@@ -60,8 +66,8 @@ export function loadTokens(projectId: string): Tokens {
   return read<Tokens>(tokensKey(projectId)) ?? {};
 }
 
-export function saveToken(projectId: string, role: Role, token: string) {
-  write(tokensKey(projectId), { ...loadTokens(projectId), [role]: token });
+export function saveToken(projectId: string, party: string, token: string) {
+  write(tokensKey(projectId), { ...loadTokens(projectId), [party]: token });
 }
 
 export function forgetProject(projectId: string) {

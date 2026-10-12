@@ -4,10 +4,12 @@
 // the client sees it.
 import { betaZodOutputFormat, betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { issueTeamAccess } from "./access";
 import { AiError, anthropic, MODEL } from "./ai";
+import { EscrowError } from "./escrow";
 import { checkPlan, executionOrder, type PlanProposal } from "./plan";
 import { getProvider, PROVIDERS, type Provider } from "./providers";
-import { getProject, logEvent, newId, replaceProjectMilestones, updateProject, type Goal, type Milestone, type Offer, type TraceEntry } from "./store";
+import { getProject, insertProject, logEvent, newId, replaceProjectMilestones, updateProject, type Goal, type Milestone, type Offer, type Project, type TraceEntry } from "./store";
 
 const euros = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 
@@ -223,6 +225,44 @@ export async function runPlanner(opts: {
 }
 
 // ---------- Project lifecycle ----------
+
+const MAX_GOAL_CHARS = 2_000;
+
+/** A client states a goal and budget; the team is assembled in the background. */
+export async function createTeamProject(input: { goal: string; budgetCents: number; deadline?: string; context?: string; clientName?: string }) {
+  const text = input.goal.trim();
+  if (text.length < 20) throw new EscrowError("Describe what you want to achieve in a sentence or two.");
+  if (text.length > MAX_GOAL_CHARS || (input.context?.length ?? 0) > MAX_GOAL_CHARS) throw new EscrowError(`Keep the goal and context under ${MAX_GOAL_CHARS} characters each.`);
+  if (!Number.isInteger(input.budgetCents) || input.budgetCents < 1_000 || input.budgetCents > 1_000_000) {
+    throw new EscrowError("The budget must be between €10 and €10,000.");
+  }
+  const goal: Goal = { text, budgetCents: input.budgetCents, deadline: input.deadline?.trim() || null, context: input.context?.trim() ?? "" };
+  // Every catalog provider gets a link up front; only those in the plan will be able to use it.
+  const { tokens, access } = issueTeamAccess(PROVIDERS.map((p) => p.id));
+  const now = new Date().toISOString();
+  const project: Project = {
+    id: newId("p"),
+    title: text.length > 70 ? `${text.slice(0, 67)}…` : text,
+    clientName: input.clientName?.trim() || null,
+    freelancerName: null,
+    freelancerEmail: "",
+    currency: process.env.CURRENCY ?? "EUR",
+    status: "proposed",
+    // Providers agree through their agents' offers; only the client approves the plan.
+    approvals: { client: false, freelancer: true },
+    access,
+    mode: "team",
+    goal,
+    plan: { version: 0, rationale: "", leftoverPolicy: "", offers: [], trace: [], history: [], unavailable: [], state: "planning" },
+    agreement: "",
+    issues: [],
+    createdAt: now,
+    events: [{ at: now, type: "goal_set", detail: `Budget €${(goal.budgetCents / 100).toFixed(2)}` }],
+  };
+  await insertProject(project, []);
+  void runInitialPlanning(project.id).catch((err) => console.error("planning failed", err));
+  return { projectId: project.id, tokens };
+}
 
 /** Build the milestones for a newly accepted plan. */
 function toMilestones(projectId: string, currency: string, proposal: PlanProposal): Milestone[] {

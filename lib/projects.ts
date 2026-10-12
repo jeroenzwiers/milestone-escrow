@@ -69,6 +69,7 @@ export async function editMilestone(projectId: string, milestoneId: string, edit
   const project = await getProject(projectId);
   if (!project) throw new EscrowError("Project not found", 404);
   if (project.status !== "proposed") throw new EscrowError("The plan is already agreed and can no longer be changed.");
+  if (project.mode === "team") throw new EscrowError("Team plans follow the providers' accepted offers and can't be edited by hand.");
 
   if (edit.amountCents !== undefined && (!Number.isInteger(edit.amountCents) || edit.amountCents <= 0)) {
     throw new EscrowError("Amount must be greater than zero.");
@@ -94,6 +95,10 @@ export async function approvePlan(projectId: string, role: Role) {
   const project = await getProject(projectId);
   if (!project) throw new EscrowError("Project not found", 404);
   if (project.status !== "proposed") return project;
+  if (project.mode === "team") {
+    if (role !== "client") throw new EscrowError("Providers agree through their offers; only the client approves a team plan", 403);
+    if (project.plan?.state !== "ready" || project.milestones.length === 0) throw new EscrowError("The plan is not ready yet");
+  }
   if (role === "freelancer" && !project.freelancerEmail) {
     throw new EscrowError("Add the freelancer's PayPal email before approving.");
   }

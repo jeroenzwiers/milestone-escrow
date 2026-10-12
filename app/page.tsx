@@ -18,7 +18,7 @@ export default function Home() {
       myProjectIds().map(async (id) => {
         const tokens = loadTokens(id);
         try {
-          return await api<ProjectWithMilestones>(`/api/projects/${id}`, "GET", undefined, tokens.client ?? tokens.freelancer);
+          return await api<ProjectWithMilestones>(`/api/projects/${id}`, "GET", undefined, tokens.client ?? Object.values(tokens)[0]);
         } catch {
           forgetProject(id); // link no longer valid (e.g. the demo data was cleared)
           return null;
@@ -52,7 +52,8 @@ export default function Home() {
         </div>
         <div className="actions" style={{ marginTop: 0 }}>
           <button onClick={startDemo} disabled={starting}>{starting ? "Setting up…" : "Try the demo project"}</button>
-          <Link href="/projects/new" className="button primary">New project from agreement</Link>
+          <Link href="/projects/new" className="button">From an agreement</Link>
+          <Link href="/goals/new" className="button primary">Start from a goal</Link>
         </div>
       </header>
 
@@ -80,7 +81,9 @@ export default function Home() {
             <div className="card-head">
               <h2>
                 {p.title}
-                <span className={`badge ${p.status === "active" ? "funded" : "proposed"}`}>{p.status === "active" ? "agreed" : "awaiting approval"}</span>
+                <span className={`badge ${p.status === "active" ? "funded" : "proposed"}`}>
+                  {p.plan?.state === "planning" ? "assembling team" : p.status === "active" ? "agreed" : "awaiting approval"}
+                </span>
               </h2>
               <span className="amount">{money(total, p.currency)}</span>
             </div>
