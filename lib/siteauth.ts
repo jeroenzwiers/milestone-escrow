@@ -2,7 +2,8 @@
 // AI features. Off when SITE_PASSWORD is not set, e.g. in local development.
 // Kept free of Node-only APIs because it runs in proxy.ts.
 
-export const PUBLIC_PATHS = ["/api/webhooks/paypal"]; // PayPal must reach this; it verifies its own signatures
+// PayPal must reach the webhook (it verifies its own signatures); the host's health check must reach /api/health.
+export const PUBLIC_PATHS = ["/api/webhooks/paypal", "/api/health"];
 
 function sameString(a: string, b: string): boolean {
   // Constant-time comparison so the password can't be guessed character by character.

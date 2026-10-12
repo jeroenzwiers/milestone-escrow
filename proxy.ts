@@ -5,7 +5,8 @@ import { isAuthorized, PUBLIC_PATHS } from "./lib/siteauth";
 export function proxy(request: NextRequest) {
   const password = process.env.SITE_PASSWORD;
   if (!password) return NextResponse.next();
-  if (PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p))) return NextResponse.next();
+  const path = request.nextUrl.pathname;
+  if (PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`))) return NextResponse.next();
   if (isAuthorized(request.headers.get("authorization"), process.env.SITE_USER || "demo", password)) return NextResponse.next();
   return new NextResponse("This demo is password protected. The login is in the project's testing instructions.", {
     status: 401,
