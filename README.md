@@ -1,104 +1,123 @@
 # Milestone Escrow
 
-**Freelancers get paid when the work is done, and clients only pay for work that's done.**
-Clients fund project milestones up front with PayPal. The platform holds the money, and an AI agent checks each delivery against the agreed acceptance criteria before it releases the payout. When the client and freelancer disagree, the agent proposes a fair split and settles it.
+**Give it a goal and a budget, and a team assembles to make it happen. Everyone is paid from escrow when their part is verified as done.**
 
-Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Everything runs in the PayPal sandbox.
+A bakery owner writes: *"I want to start online lunch orders next week. €300."* Nobody offers that as one package. Milestone Escrow's planner agent asks provider agents (a developer, a copywriter, couriers) for offers, negotiates within the budget, and proposes one plan: who does what, in which order, for how much, and how each result will be checked. The owner approves and funds the whole plan with one PayPal payment. When a provider drops out, the planner repairs the plan and shows what that does to the money. Each provider is paid out by PayPal only after an AI reviewer has verified their delivery against the agreed acceptance criteria; anything unspent goes back to the client.
 
-## Status
+The same escrow also works for a classic one-to-one job: paste a quote or email, and the AI turns it into milestones with checkable criteria for one client and one freelancer.
 
-- [x] **Week 1: money flow.** Fund a milestone (JS SDK v6 + Orders v2), hold it, then release (Payouts), refund (Captures refund) or split between both.
-- [x] **Week 2: AI milestone plans.** Paste a quote, email or chat. Claude turns it into milestones with amounts, objectively checkable acceptance criteria and the evidence to submit, and flags gaps that could cause a dispute later. Both parties can edit the plan and must approve the same version before anything can be funded.
-- [x] **Week 3: AI verification.** The freelancer submits notes, links and screenshots/PDFs. A Claude agent inspects the evidence with tools (GitHub pull requests via the API, public web pages) and judges every acceptance criterion with an explanation and a confidence score. Policy in code turns that into a decision: all met with high confidence starts a challenge window followed by automatic payout; anything unmet goes back to the freelancer with feedback; uncertainty goes to the client. PayPal webhooks keep payout status current.
-- [x] **Week 4a: AI mediation.** The client can object to a verified delivery and the freelancer can contest a rejection. Both state their side, Claude proposes a split with reasoning per criterion, and PayPal executes it (partial payout and partial refund) only once both parties accept the same proposal.
-- [x] **Personal links.** Each party acts through a private link; the server derives the role from it, so only the client can fund, release or refund and only the freelancer can deliver. Judges get their own copy of the demo project with both roles.
-- [ ] Week 4b: hosted demo, polish.
+Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). **This is a sandbox prototype**: all payments run in the PayPal sandbox with test money, the providers in team mode are AI agents with their own private terms, and it is not a regulated escrow service (see [Limitations](#limitations)).
 
-## Demo deliverable
+## What it does
 
-The demo project (**Try the demo project** on the home page) is a webshop for a fictional bakery. Its deliverable is a real repository, [jeroenzwiers/gouden-korst-webshop](https://github.com/jeroenzwiers/gouden-korst-webshop), live at <https://jeroenzwiers.github.io/gouden-korst-webshop/>:
+| | |
+|---|---|
+| **Team from a goal** | A planner agent (Claude Opus 5.5, tool use) asks provider agents for offers, makes at most one counter-offer per provider, and submits a plan. Provider agents (Claude Haiku 5.5) answer under private terms the planner can't see: minimum price, availability, conditions. Every plan must pass fixed rules in code before the client sees it. |
+| **Replanning** | A provider drops out (or withdraws itself). Delivered and paid work stays locked, unchanged work is kept, the rest is renegotiated. The client sees the changes and their effect on money (refund for replaced work, funding for new work) and approves plan v2. |
+| **Plan from an agreement** | Paste a quote, email or chat; Claude turns it into milestones with amounts, objectively checkable acceptance criteria and the evidence to submit, and flags gaps that could cause a dispute. Both parties approve the same version. |
+| **Funding** | The client pays with the PayPal JS SDK v6 (Orders v2). A team plan is funded with one order; each milestone settles its own share of that capture. |
+| **AI review of deliveries** | The provider submits notes, links and screenshots/PDFs. A Claude agent inspects them with tools (GitHub pull requests via the API, public web pages) and judges every criterion with an explanation and a confidence score. |
+| **Automatic payout** | Code, not the model, turns the verdicts into a decision. Everything met with high confidence starts a challenge window, followed by a PayPal Payout to that provider (minus a platform fee). Unmet criteria go back with feedback; uncertainty goes to the client. |
+| **Disputes** | The client can object to a verified delivery, the provider can contest a rejection. Both state their side, Claude proposes a split per criterion, and PayPal executes it (partial payout plus partial refund) once both accept the same proposal. |
 
-- **Milestone 1** ([PR #1](https://github.com/jeroenzwiers/gouden-korst-webshop/pull/1), merged): homepage and catalogue. Submit the PR, the live URL and the screenshots in `demo/evidence/`, and the reviewer approves it.
-- **Milestone 2** ([PR #2](https://github.com/jeroenzwiers/gouden-korst-webshop/pull/2), open): ordering and PayPal checkout, but deliberately **without** the agreed confirmation email. Submit the PR and the reviewer asks for changes.
+## Try it
 
-## Who can do what
+**Hosted demo:** <https://milestone-escrow.onrender.com>. The site is password protected so bots can't spend the AI budget; the login is in the Devpost testing instructions. The free instance sleeps when idle, so the first page can take up to a minute.
 
-There are no accounts. When a project is created, each party gets a **personal link** with a random token; the server stores only its SHA-256 hash and derives the caller's role from the token on every request (`lib/access.ts`). Whatever role the browser claims is ignored. The token travels in the link's `#fragment` and in a request header, never in a URL the server sees, so it doesn't end up in logs; uploaded files are served through short-lived signed URLs instead.
+1. **Try the team demo** gives you your own copy of the bakery goal with the team the agents assembled for it in an earlier, recorded run (labelled as such). Approve it, fund it with the client sandbox account, then open *Demo: let a provider drop out* and watch the planner repair the plan live.
+2. Switch **Acting as** to a provider and deliver. The developer's work is a real repository, [jeroenzwiers/gouden-korst-webshop](https://github.com/jeroenzwiers/gouden-korst-webshop), live at <https://jeroenzwiers.github.io/gouden-korst-webshop/>. For the team plan's order page, submit [PR #2](https://github.com/jeroenzwiers/gouden-korst-webshop/pull/2): it adds ordering and PayPal checkout but deliberately lacks the agreed confirmation email, so the reviewer asks for changes. For the courier, upload the fictional trial-week delivery log in [`demo/evidence/`](demo/evidence/).
+3. **Single-freelancer demo** is the one-to-one version of the bakery job. Its first milestone (homepage and catalogue) is met by [PR #1](https://github.com/jeroenzwiers/gouden-korst-webshop/pull/1) plus the live URL and the screenshots in `demo/evidence/`.
+4. **Start from a goal** runs the agents live on your own goal (about a minute). **From an agreement** drafts milestones from a quote.
 
-| Action | Client | Freelancer |
-|---|---|---|
-| View, edit and approve the plan | ✓ | ✓ |
-| Fund a milestone, release, split or refund, request changes | ✓ | |
-| Submit work, contest a rejection | | ✓ |
-| Object to a verified delivery | ✓ | |
-| Add a statement, ask for and accept a mediation proposal | ✓ | ✓ |
-
-**Try the demo project** creates a private copy of the bakery project for the visitor with both links in their browser, so one person can play both roles without affecting anyone else's demo.
+Every visitor's demo is a private copy; you can act as the client and as every provider in your own browser.
 
 ## How the AI is kept in check
 
-- The model never moves money itself. It returns a verdict per criterion; `decide()` in `lib/verify.ts` maps verdicts to an outcome, and only "every criterion met with at least 80% confidence" can lead to an automatic payout.
-- Every automatic payout waits for a challenge window (`CHALLENGE_WINDOW_MINUTES`) in which the client can object or release early.
-- Evidence is treated as untrusted data. The agent can only open links from the submission (and pages on the same sites), private and internal network addresses are blocked, and instructions hidden in notes, pull requests or pages are ignored and flagged. Run `INJECT=1 npm run ai:verify` to see a prompt-injection attempt fail.
-- What the agent opened and concluded is stored with the milestone and shown to both parties.
+- **The model never moves money itself.** The planner proposes; `checkPlan()` in `lib/plan.ts` rejects any plan that exceeds the budget (including money already locked), books a provider for anything other than its accepted offer or below its floor, uses an unavailable provider, or has circular dependencies. The rejection goes back to the planner to fix.
+- **Payout policy in code.** The reviewer returns a verdict per criterion; `decide()` in `lib/verify.ts` allows an automatic payout only when every criterion is met with at least 80% confidence. Verdicts are matched to criteria by text, never by position, so a skipped criterion becomes "unclear" and can't pay out.
+- **People can always step in.** Every automatic payout waits for a challenge window (`CHALLENGE_WINDOW_MINUTES`); plan changes need the client's approval; a split needs both parties.
+- **Evidence and offers are untrusted data.** The reviewer can only open links from the submission (and pages on the same sites), private and internal addresses are blocked, and instructions hidden in notes, pull requests or pages are ignored and flagged. Run `INJECT=1 npm run ai:verify` to see a prompt-injection attempt fail.
+- **Private provider terms stay on the server.** The UI receives provider names and kinds only.
+- **Everything is visible.** What the agents asked, offered, rejected and concluded is stored with the project and shown to the parties.
 
 ## How the money moves
 
 ```
-Client ──(PayPal checkout)──▶ Platform account ──(Payouts, minus fee)──▶ Freelancer
-                                      └──────────(Refund)──────────────▶ Client
+Client ──(one PayPal order per plan version)──▶ Platform account
+                                                  ├──(Payout, minus fee)──▶ Provider A
+                                                  ├──(Payout, minus fee)──▶ Provider B
+                                                  └──(Refund: unspent or replaced work)──▶ Client
 ```
 
-Milestone states: `draft → awaiting_funding → funded → released | refunded | split`.
-All money movement goes through `lib/escrow.ts`, which enforces the state machine, takes one operation per milestone at a time, and makes retries idempotent by sending `PayPal-Request-Id` headers and deterministic payout batch ids.
+Milestone states: `draft → awaiting_funding → funded → in_review → verified → released`, with `changes_requested`, `needs_review`, `disputed`, `refunded` and `split` along the way. All money movement goes through `lib/escrow.ts`, which enforces the state machine, takes one operation per milestone at a time, and makes retries idempotent with `PayPal-Request-Id` headers and deterministic payout batch ids. A split that fails halfway can be retried without paying out twice.
 
-> In production this would use PayPal's multiparty platform with delayed disbursement rather than holding funds on the platform account.
+## Who can do what
 
-## Setup
+There are no accounts. Each party gets a **personal link** with a random token; the server stores only its SHA-256 hash and derives the caller's role from it on every request (`lib/access.ts`). Whatever role the browser claims is ignored. The token travels in the link's `#fragment` and a request header, never in a URL the server sees; uploaded files are served through short-lived signed URLs.
+
+| Action | Client | Provider / freelancer |
+|---|---|---|
+| View the plan | ✓ | ✓ |
+| Approve a plan from an agreement | ✓ | ✓ |
+| Approve a team plan or a replanned version | ✓ | (agreed through its offer) |
+| Fund, release, split, refund, request changes | ✓ | |
+| Submit work, contest a rejection, withdraw from a team plan | | ✓ (own milestones only) |
+| Object to a verified delivery | ✓ | |
+| Add a statement, ask for and accept a mediation proposal | ✓ | ✓ |
+
+## Limitations
+
+- **Sandbox prototype, not a regulated escrow service.** Funds are held on the platform's sandbox account. A production version would use PayPal's multiparty platform with delayed disbursement, so PayPal rather than the platform holds the money.
+- **Providers are demo agents.** There is no provider sign-up or marketplace; the five providers are AI agents with fixed private terms, and their payouts go to sandbox accounts.
+- **Personal links are bearer credentials.** Whoever has a link acts as that party. Fine for a demo; a real service needs accounts.
+- **After a payout there is no clawback.** The challenge window is the moment to object; after that, PayPal's own dispute process applies.
+- **The team demo starts from a recorded plan** so visitors don't wait; replanning and everything after it runs live.
+
+## Run it yourself
 
 Requires Node 20+, a PayPal developer account and an Anthropic API key.
 
-1. **Create sandbox credentials** at [developer.paypal.com](https://developer.paypal.com/) → *Apps & Credentials* → *Sandbox* → *Create App* (type: Merchant). Under the app's **Features**, make sure **Payouts** is enabled.
-2. **Sandbox accounts** (*Testing Tools → Sandbox Accounts*). The default business account is the platform. You need two **personal** accounts: one is the client (it pays), the other is the freelancer (it receives payouts).
-3. Configure:
+1. **PayPal sandbox app** at [developer.paypal.com](https://developer.paypal.com/) → *Apps & Credentials* → *Sandbox* → *Create App* (Merchant). Under **Features**, enable **Payouts**.
+2. **Sandbox accounts** (*Testing Tools → Sandbox Accounts*): the default business account is the platform. Create personal accounts for the client, the freelancer/developer, and the three other demo providers.
+3. Configure and run:
    ```bash
-   cp .env.example .env.local   # then fill in the values
+   cp .env.example .env.local   # fill in PayPal, Anthropic and the sandbox account emails
    npm install
-   npm run sandbox:check        # verifies credentials + Payouts permission
-   npm run sandbox:e2e          # pay → capture → 70% payout → 30% refund, against the real sandbox
-   npm run ai:extract           # agreement → milestone plan on the demo email (needs ANTHROPIC_API_KEY)
-   npm run ai:verify            # verification agent on a sample delivery (INJECT=1 for an injection attempt)
-   npm test                     # unit tests: payout policy, money flow, disputes, webhooks, SSRF guard (no accounts needed)
+   npm run sandbox:check        # credentials + Payouts permission
+   npm run sandbox:e2e          # pay → capture → 70% payout → 30% refund against the real sandbox
+   npm test                     # 70 unit tests, no accounts needed
    npm run test:pg              # the same tests against Postgres (PGlite, in-process)
    npm run dev                  # http://localhost:3000
    ```
-4. Optional: once deployed, add a webhook for `https://<host>/api/webhooks/paypal` in the PayPal dashboard and set `PAYPAL_WEBHOOK_ID`. Locally the app polls payout status instead.
-5. In the app, click **Try the demo project** for an approved bakery project with both roles in your browser: fund a milestone as **Client** with the client sandbox account, then switch to **Freelancer** (top right) to submit the work. Or click **New project from agreement** → **Use example** to let the AI draft a plan; afterwards choose *Demo: also act as the freelancer in this browser* to approve it as both parties.
+4. Optional AI scripts: `npm run ai:extract` (agreement → plan), `npm run ai:verify` (review a delivery), `npm run ai:plan` (team planning plus a dropout).
+
+Without `DATABASE_URL` data is stored in `data/db.json`; with it (e.g. a Neon Postgres URL) in Postgres. For a hosted deployment, `render.yaml` describes the Render service; set `SITE_PASSWORD` to put the site behind a password, and point a PayPal webhook at `/api/webhooks/paypal` with `PAYPAL_WEBHOOK_ID` (without it the app polls payout status). AI use is capped per address per hour and per day (`AI_LIMIT_PER_DAY`, `PLAN_LIMIT_PER_DAY`), with the daily totals stored in the database.
 
 ## Project layout
 
 | Path | What |
 |---|---|
-| `lib/paypal.ts` | PayPal REST client: OAuth, Orders, Captures refund, Payouts |
-| `lib/escrow.ts` | Escrow state machine and guardrails |
-| `lib/ai.ts` | Claude: agreement → milestone plan (structured output) |
-| `lib/projects.ts` | Plan lifecycle: AI draft, edits, two-party approval |
-| `lib/store.ts` | Domain types, data access and the demo scenario |
-| `lib/db.ts` | Storage backends: JSON file (local) or Postgres (`DATABASE_URL`, e.g. Neon); uploads and processed webhook ids included |
+| `lib/team.ts` | Provider agents, planner agent, team projects, the recorded team demo |
+| `lib/plan.ts` | Plan guardrails: budget, accepted prices, floors, availability, dependencies |
+| `lib/replan.ts` | Dropouts, replanning, approving a new plan version and its money effect |
+| `lib/providers.ts` | Demo provider catalog (public profiles and private terms) |
+| `lib/escrow.ts` | Escrow state machine: funding (per milestone or per plan), release, split, refund |
+| `lib/paypal.ts` | PayPal REST client: OAuth, Orders, Captures refund, Payouts, webhook verification |
+| `lib/verify.ts` | Delivery review agent and the payout decision policy |
+| `lib/evidence.ts` | Review tools: GitHub pull requests, public web pages (SSRF-guarded) |
+| `lib/delivery.ts` | Submitting work, the review, challenge window, disputes, auto-release |
+| `lib/mediation.ts` | Statements, AI split proposals, two-party acceptance |
+| `lib/ai.ts`, `lib/projects.ts` | Agreement → milestone plan, edits and two-party approval |
+| `lib/access.ts` | Personal links and role checks for every API route |
+| `lib/store.ts`, `lib/db.ts` | Domain types and storage (JSON file or Postgres), files, counters |
 | `lib/files.ts` | Short-lived signed URLs for uploaded evidence |
-| `lib/verify.ts` | Verification agent (Claude + tools) and the payout decision policy |
-| `lib/evidence.ts` | Evidence tools: GitHub pull requests, public web pages (SSRF-guarded) |
-| `lib/delivery.ts` | Submit work, run the review, challenge window, disputes, auto-release |
-| `lib/mediation.ts` | Disputes: statements, AI split proposal, two-party acceptance |
-| `lib/webhooks.ts` | PayPal webhook events (payout status, disputes) |
-| `lib/access.ts` | Personal links: token hashing, role checks for every API route |
-| `lib/ratelimit.ts` | Caps AI calls so a public demo can't drain the API credit |
-| `app/api/projects/…` | Create from agreement, view, edit milestones, approve |
-| `app/api/demo/start` | Private copy of the demo project for a visitor |
-| `app/api/milestones/…` | `order`, `capture`, `submit`, `dispute`, `request-changes`, `statement`, `mediate`, `accept`, `release` (full or split), `refund` |
-| `app/api/webhooks/paypal` | Verified PayPal webhook receiver |
-| `app/`, `components/` | UI: project list, new project, plan review, funding with the PayPal JS SDK v6 |
-| `scripts/` | Sandbox setup check and end-to-end money flow test |
+| `lib/webhooks.ts` | PayPal webhook events (payout status, disputes), idempotent |
+| `lib/ratelimit.ts`, `lib/siteauth.ts`, `proxy.ts` | AI rate limits and the site password |
+| `app/`, `components/` | UI and API routes |
+| `tests/` | Unit tests (PayPal replaced by a recording fake) |
+| `scripts/` | Sandbox checks and AI scripts |
+| `docs/TEAM-MODE.md` | Design notes for team mode |
+| `demo/` | Video script and demo evidence |
 
 ## License
 
