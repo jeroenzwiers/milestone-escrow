@@ -13,6 +13,13 @@ Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Eve
 - [x] **Week 4a: AI mediation.** The client can object to a verified delivery and the freelancer can contest a rejection. Both state their side, Claude proposes a split with reasoning per criterion, and PayPal executes it (partial payout and partial refund) only once both parties accept the same proposal.
 - [ ] Week 4b: hosted demo, demo deliverable, polish.
 
+## Demo deliverable
+
+The seeded project is a webshop for a fictional bakery. Its deliverable is a real repository, [jeroenzwiers/gouden-korst-webshop](https://github.com/jeroenzwiers/gouden-korst-webshop), live at <https://jeroenzwiers.github.io/gouden-korst-webshop/>:
+
+- **Milestone 1** ([PR #1](https://github.com/jeroenzwiers/gouden-korst-webshop/pull/1), merged): homepage and catalogue. Submit the PR, the live URL and the screenshots in `demo/evidence/`, and the reviewer approves it.
+- **Milestone 2** ([PR #2](https://github.com/jeroenzwiers/gouden-korst-webshop/pull/2), open): ordering and PayPal checkout, but deliberately **without** the agreed confirmation email. Submit the PR and the reviewer asks for changes.
+
 ## How the AI is kept in check
 
 - The model never moves money itself. It returns a verdict per criterion; `decide()` in `lib/verify.ts` maps verdicts to an outcome, and only "every criterion met with at least 80% confidence" can lead to an automatic payout.

@@ -6,8 +6,8 @@ import { isIP } from "node:net";
 
 const MAX_PAGE_BYTES = 2_000_000;
 const MAX_PAGE_CHARS = 30_000;
-const MAX_PATCH_CHARS = 4_000;
-const MAX_DIFF_CHARS = 40_000;
+const MAX_PATCH_CHARS = 15_000;
+const MAX_DIFF_CHARS = 60_000;
 const TIMEOUT_MS = 10_000;
 
 export class EvidenceError extends Error {}
