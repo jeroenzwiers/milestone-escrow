@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AuditLog, Criteria, MilestoneCard } from "@/components/MilestoneCard";
 import { PayPalButton } from "@/components/PayPalButton";
-import { GoalCard, NegotiationTrace, TeamPlanView, type ProviderInfo } from "@/components/TeamPlan";
+import { DropoutControl, GoalCard, NegotiationTrace, ReplanProposal, TeamPlanView, type ProviderInfo } from "@/components/TeamPlan";
 import { api, linkFor, loadInvite, loadTokens, money, partyOf, saveInvite, saveToken, setActiveToken, sumCents, type Invite, type Tokens } from "@/lib/client";
 import type { Milestone, ProjectWithMilestones, Role } from "@/lib/store";
 
@@ -126,7 +126,10 @@ export default function ProjectPage() {
   const heldStatuses: Milestone["status"][] = ["funded", "in_review", "changes_requested", "needs_review", "verified", "disputed"];
   const isTeam = project.mode === "team";
   const providerName = (pid?: string) => project.providers.find((p) => p.id === pid)?.name ?? pid ?? "";
-  const unfunded = milestones.filter((m) => m.status === "draft" || m.status === "awaiting_funding");
+  const current = milestones.filter((m) => m.replacedIn === undefined);
+  const replacedMs = milestones.filter((m) => m.replacedIn !== undefined);
+  const unfunded = current.filter((m) => m.status === "draft" || m.status === "awaiting_funding");
+  const dropoutCandidates = [...new Set(current.filter((m) => ["draft", "awaiting_funding", "funded"].includes(m.status)).map((m) => m.providerId!).filter(Boolean))];
   // In team mode, only offer the parties that actually have a role in the current plan.
   const inPlan = new Set(milestones.map((m) => m.providerId).filter(Boolean));
   const switchable = Object.keys(tokens ?? {}).filter((k) => !isTeam || k === "client" || inPlan.has(partyOf(k).providerId));
@@ -174,8 +177,19 @@ export default function ProjectPage() {
 
       {isTeam && project.plan?.state === "planning" && (
         <section className="card">
-          <NegotiationTrace trace={project.plan.trace} live />
+          <NegotiationTrace trace={project.status === "active" ? project.plan.trace.slice(project.plan.trace.map((t) => t.tool).lastIndexOf("dropout")) : project.plan.trace} live />
         </section>
+      )}
+
+      {isTeam && project.plan?.pending && (
+        <ReplanProposal
+          project={project}
+          pending={project.plan.pending}
+          providers={project.providers}
+          canApprove={role === "client"}
+          busy={busy !== null}
+          onApprove={() => run("replan", () => api(`/api/projects/${id}/replan/approve`, "POST"))}
+        />
       )}
 
       {isTeam && project.plan?.state === "failed" && (
@@ -194,7 +208,7 @@ export default function ProjectPage() {
         </>
       )}
 
-      {isTeam && project.status === "active" && unfunded.length > 0 && (
+      {isTeam && project.status === "active" && unfunded.length > 0 && !project.plan?.pending && project.plan?.state !== "planning" && (
         <section className="card fund-plan">
           <div>
             <h2>Fund the plan</h2>
@@ -223,7 +237,7 @@ export default function ProjectPage() {
       )}
 
       {project.status === "active" &&
-        milestones.map((m, i) => (
+        (isTeam ? current : milestones).map((m, i) => (
           <MilestoneCard
             key={m.id}
             m={m}
@@ -236,6 +250,24 @@ export default function ProjectPage() {
             team={isTeam ? { providerName: providerName(m.providerId), isMine: m.providerId === myProviderId, after: (m.dependsOn ?? []).map((d) => milestones.find((x) => x.id === d)?.title ?? d) } : undefined}
           />
         ))}
+
+      {isTeam && project.status === "active" && project.plan?.state !== "planning" && !project.plan?.pending && (
+        <DropoutControl providers={project.providers} candidates={dropoutCandidates} asProvider={myProviderId} busy={busy !== null} onDropout={(pid) => run("dropout", () => api(`/api/projects/${id}/dropout`, "POST", { providerId: pid }))} />
+      )}
+
+      {replacedMs.length > 0 && (
+        <details className="card">
+          <summary className="muted small">Replaced in a later plan version ({replacedMs.length})</summary>
+          <ul className="small">
+            {replacedMs.map((m) => (
+              <li key={m.id}>
+                {m.title} · {providerName(m.providerId)} · {money(m.amountCents, currency)} · replaced in v{m.replacedIn}
+                {m.refund && <> · refunded {money(m.refund.amountCents, currency)}</>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {isTeam && project.status === "active" && project.plan && (
         <details className="card">

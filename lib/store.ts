@@ -1,5 +1,6 @@
 // Domain types and data access. Storage itself (JSON file or Postgres) is in lib/db.ts.
 import { backend } from "./db";
+import type { PlannedMilestone } from "./plan";
 
 export type MilestoneStatus =
   | "draft" // agreed (or still being agreed), not yet paid by the client
@@ -84,6 +85,20 @@ export type PlanMeta = {
   /** "planning" while the agents work in the background. */
   state?: "planning" | "ready" | "failed";
   error?: string;
+  /** A replanned version waiting for the client's approval. */
+  pending?: PendingPlan;
+};
+
+export type PendingPlan = {
+  version: number;
+  reason: string;
+  milestones: PlannedMilestone[];
+  rationale: string;
+  leftoverPolicy: string;
+  changes: string[];
+  offers: Offer[];
+  /** Planner key -> id of an existing open milestone that stays unchanged. */
+  keep: Record<string, string>;
 };
 
 export type Milestone = {
@@ -92,6 +107,8 @@ export type Milestone = {
   // Team mode: who delivers and gets paid for this milestone, and what must be done first.
   providerId?: string;
   dependsOn?: string[];
+  /** Set when a later plan version replaced this milestone (it was refunded or never funded). */
+  replacedIn?: number;
   title: string;
   criteria: string[];
   evidence: string;

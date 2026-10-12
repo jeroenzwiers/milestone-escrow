@@ -1,7 +1,7 @@
 "use client";
 
 import { money } from "@/lib/client";
-import type { Milestone, Offer, ProjectWithMilestones, TraceEntry } from "@/lib/store";
+import type { Milestone, Offer, PendingPlan, ProjectWithMilestones, TraceEntry } from "@/lib/store";
 
 export type ProviderInfo = { id: string; name: string; kind: string };
 
@@ -124,5 +124,102 @@ export function TeamPlanView({ project, providers }: { project: ProjectWithMiles
         <NegotiationTrace trace={plan.trace} live={false} />
       </details>
     </section>
+  );
+}
+
+/** A replanned version after a dropout: what changes, what it does with money, approve. */
+export function ReplanProposal({
+  project,
+  pending,
+  providers,
+  canApprove,
+  busy,
+  onApprove,
+}: {
+  project: ProjectWithMilestones;
+  pending: PendingPlan;
+  providers: ProviderInfo[];
+  canApprove: boolean;
+  busy: boolean;
+  onApprove: () => void;
+}) {
+  const name = (id: string) => providers.find((p) => p.id === id)?.name ?? id;
+  const keptIds = new Set(Object.values(pending.keep));
+  const open = project.milestones.filter((m) => m.replacedIn === undefined && ["draft", "awaiting_funding", "funded"].includes(m.status));
+  const replaced = open.filter((m) => !keptIds.has(m.id));
+  const added = pending.milestones.filter((m) => !pending.keep[m.key]);
+  const refund = replaced.filter((m) => m.status === "funded").reduce((n, m) => n + m.amountCents, 0);
+  const fresh = added.reduce((n, m) => n + m.amountCents, 0);
+  const locked = project.milestones.filter((m) => m.replacedIn === undefined && !open.includes(m)).reduce((n, m) => n + m.amountCents, 0);
+  const keptCents = open.filter((m) => keptIds.has(m.id)).reduce((n, m) => n + m.amountCents, 0);
+  return (
+    <section className="card replan">
+      <p className="verdict-label">Plan v{pending.version} proposed · {pending.reason}</p>
+      <BudgetBar usedCents={locked + keptCents + fresh} budgetCents={project.goal!.budgetCents} currency={project.currency} />
+      <ul className="changes">{pending.changes.map((c) => <li key={c}>{c}</li>)}</ul>
+      <div className="money-effect">
+        <div><span className="small muted">Back to you for replaced work</span><strong>{money(refund, project.currency)}</strong></div>
+        <div><span className="small muted">To fund for new work</span><strong>{money(fresh, project.currency)}</strong></div>
+      </div>
+      {added.length > 0 && (
+        <ol className="plan-steps">
+          {added.map((m) => (
+            <li key={m.key}>
+              <div className="step-head"><strong>{m.title}</strong><span>{money(m.amountCents, project.currency)}</span></div>
+              <p className="small muted">{name(m.providerId)} · new</p>
+              <ul className="small">{m.criteria.map((c) => <li key={c}>{c}</li>)}</ul>
+            </li>
+          ))}
+        </ol>
+      )}
+      <details>
+        <summary className="muted small">Why this change</summary>
+        <p className="small" style={{ whiteSpace: "pre-wrap" }}>{pending.rationale}</p>
+      </details>
+      <div className="actions">
+        {canApprove ? (
+          <button className="primary" disabled={busy} onClick={onApprove}>Approve plan v{pending.version}</button>
+        ) : (
+          <span className="pending">Waiting for the client to approve</span>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** Demo control for the client, and a withdraw button for a provider with open work. */
+export function DropoutControl({
+  providers,
+  candidates,
+  asProvider,
+  busy,
+  onDropout,
+}: {
+  providers: ProviderInfo[];
+  candidates: string[];
+  asProvider: string | null;
+  busy: boolean;
+  onDropout: (providerId: string) => void;
+}) {
+  const name = (id: string) => providers.find((p) => p.id === id)?.name ?? id;
+  if (asProvider) {
+    if (!candidates.includes(asProvider)) return null;
+    return (
+      <div className="actions">
+        <button className="danger" disabled={busy} onClick={() => onDropout(asProvider)}>Withdraw from this plan</button>
+        <span className="small muted">Your open work goes back to the planner; you are not paid for it.</span>
+      </div>
+    );
+  }
+  if (candidates.length === 0) return null;
+  return (
+    <details className="card demo-controls">
+      <summary className="muted small">Demo: let a provider drop out</summary>
+      <div className="actions">
+        {candidates.map((id) => (
+          <button key={id} disabled={busy} onClick={() => onDropout(id)}>{name(id)} drops out</button>
+        ))}
+      </div>
+    </details>
   );
 }
