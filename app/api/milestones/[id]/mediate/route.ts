@@ -8,7 +8,7 @@ export function POST(req: Request, { params }: RouteContext) {
   return handle(async () => {
     const { id } = await params;
     await authorizeMilestone(req, id);
-    if (!allowAiCall(req)) return NextResponse.json({ error: "Demo limit reached for AI mediation. Try again later." }, { status: 429 });
+    if (!(await allowAiCall(req))) return NextResponse.json({ error: "Demo limit reached for AI mediation. Try again later." }, { status: 429 });
     return proposeSettlement(id);
   });
 }

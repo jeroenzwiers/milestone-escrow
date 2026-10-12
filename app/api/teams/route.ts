@@ -6,7 +6,7 @@ import { createTeamProject } from "@/lib/team";
 // Body: { goal, budget (euros), deadline?, context?, clientName? }.
 // Returns the project id, the client link token and one link token per provider.
 export async function POST(req: Request) {
-  if (!allowPlanning(req) || !allowAiCall(req)) {
+  if (!(await allowPlanning(req))) {
     return NextResponse.json({ error: "Demo limit reached for team planning. Try again later." }, { status: 429 });
   }
   return handle(async () => {

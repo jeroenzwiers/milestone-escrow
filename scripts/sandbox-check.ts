@@ -19,7 +19,7 @@ async function main() {
     console.log(`${has ? "✔" : "✘"} ${name}`);
   }
 
-  const env = ["NEXT_PUBLIC_PAYPAL_CLIENT_ID", "FREELANCER_PAYPAL_EMAIL"];
+  const env = ["FREELANCER_PAYPAL_EMAIL"];
   for (const key of env) {
     const has = Boolean(process.env[key]);
     ok &&= has;

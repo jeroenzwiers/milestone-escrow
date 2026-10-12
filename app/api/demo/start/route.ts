@@ -7,7 +7,7 @@ import { insertProject, newDemoScenario } from "@/lib/store";
 // Creates a private copy of the demo project for this visitor, with both parties' links,
 // so judges can play both roles without affecting each other.
 export async function POST(req: Request) {
-  if (!allowDemoStart(req)) {
+  if (!(await allowDemoStart(req))) {
     return NextResponse.json({ error: "Too many demo projects from this address. Try again later." }, { status: 429 });
   }
   return handle(async () => {

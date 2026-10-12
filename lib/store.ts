@@ -242,6 +242,9 @@ export const getFile = (key: string) => backend.getFile(key);
 export const isEventProcessed = (id: string) => backend.isProcessed(id);
 export const markEventProcessed = (id: string) => backend.markProcessed(id);
 
+// Persistent counters, e.g. daily totals for the AI rate limits.
+export const bumpCounter = (key: string) => backend.bump(key);
+
 export function logEvent(target: { events: AuditEvent[] }, type: string, detail?: string) {
   target.events.push({ at: new Date().toISOString(), type, detail });
 }

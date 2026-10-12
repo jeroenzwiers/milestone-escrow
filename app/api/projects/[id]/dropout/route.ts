@@ -13,7 +13,7 @@ export async function POST(req: Request, { params }: RouteContext) {
     const { providerId } = await req.json().catch(() => ({}));
     const target = caller ?? String(providerId ?? "");
     if (role !== "client" && caller !== target) throw new EscrowError("A provider can only withdraw itself", 403);
-    if (!allowPlanning(req)) return NextResponse.json({ error: "Demo limit reached for replanning. Try again later." }, { status: 429 });
+    if (!(await allowPlanning(req))) return NextResponse.json({ error: "Demo limit reached for replanning. Try again later." }, { status: 429 });
     await reportDropout(id, target);
     return { ok: true };
   });

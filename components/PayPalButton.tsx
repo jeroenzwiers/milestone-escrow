@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { api } from "@/lib/client";
 
-const CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 const SDK_URL = "https://www.sandbox.paypal.com/web-sdk/v6/core";
 
 // Minimal typing for the parts of the PayPal JS SDK v6 we use.
@@ -23,15 +22,23 @@ declare global {
 
 let sdkPromise: Promise<PayPalSdk> | null = null;
 function loadPayPal(): Promise<PayPalSdk> {
-  if (!CLIENT_ID) return Promise.reject(new Error("NEXT_PUBLIC_PAYPAL_CLIENT_ID is not set"));
-  sdkPromise ??= new Promise<void>((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = SDK_URL;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Could not load the PayPal SDK"));
-    document.head.appendChild(s);
-  }).then(() => window.paypal!.createInstance({ clientId: CLIENT_ID, components: ["paypal-payments"] }));
+  // The (public) client id comes from the server at runtime; see app/api/paypal-config.
+  sdkPromise ??= Promise.all([
+    api<{ clientId: string }>("/api/paypal-config"),
+    new Promise<void>((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = SDK_URL;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("Could not load the PayPal SDK"));
+      document.head.appendChild(s);
+    }),
+  ])
+    .then(([{ clientId }]) => window.paypal!.createInstance({ clientId, components: ["paypal-payments"] }))
+    .catch((err) => {
+      sdkPromise = null; // allow a retry on the next render
+      throw err;
+    });
   return sdkPromise;
 }
 

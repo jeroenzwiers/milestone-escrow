@@ -25,6 +25,8 @@ export interface Backend {
   /** True the first time an id is marked; used for webhook idempotency across restarts. */
   markProcessed(eventId: string): Promise<boolean>;
   isProcessed(eventId: string): Promise<boolean>;
+  /** Atomically adds one to a named counter and returns the new value. */
+  bump(key: string): Promise<number>;
 }
 
 // ---------- JSON file (local development and tests) ----------
@@ -146,6 +148,14 @@ class FileBackend implements Backend {
   async isProcessed(eventId: string) {
     return this.processed.has(eventId);
   }
+
+  private counters = new Map<string, number>();
+
+  async bump(key: string) {
+    const n = (this.counters.get(key) ?? 0) + 1;
+    this.counters.set(key, n);
+    return n;
+  }
 }
 
 // ---------- Postgres (Neon in deployment, PGlite in tests) ----------
@@ -175,6 +185,10 @@ CREATE TABLE IF NOT EXISTS files (
 CREATE TABLE IF NOT EXISTS processed_events (
   id text PRIMARY KEY,
   at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS counters (
+  key text PRIMARY KEY,
+  value int NOT NULL
 );
 `;
 
@@ -285,6 +299,15 @@ class SqlBackend implements Backend {
     const query = await this.q();
     const res = await query<{ id: string }>("INSERT INTO processed_events (id) VALUES ($1) ON CONFLICT DO NOTHING RETURNING id", [eventId]);
     return res.rows.length === 1;
+  }
+
+  async bump(key: string) {
+    const query = await this.q();
+    const res = await query<{ value: number }>(
+      "INSERT INTO counters (key, value) VALUES ($1, 1) ON CONFLICT (key) DO UPDATE SET value = counters.value + 1 RETURNING value",
+      [key],
+    );
+    return Number(res.rows[0].value);
   }
 
   async isProcessed(eventId: string) {
