@@ -23,7 +23,7 @@ The demo project (**Try the demo project** on the home page) is a webshop for a 
 
 ## Who can do what
 
-There are no accounts. When a project is created, each party gets a **personal link** with a random token; the server stores only its SHA-256 hash and derives the caller's role from the token on every request (`lib/access.ts`). Whatever role the browser claims is ignored.
+There are no accounts. When a project is created, each party gets a **personal link** with a random token; the server stores only its SHA-256 hash and derives the caller's role from the token on every request (`lib/access.ts`). Whatever role the browser claims is ignored. The token travels in the link's `#fragment` and in a request header, never in a URL the server sees, so it doesn't end up in logs; uploaded files are served through short-lived signed URLs instead.
 
 | Action | Client | Freelancer |
 |---|---|---|
@@ -69,6 +69,7 @@ Requires Node 20+, a PayPal developer account and an Anthropic API key.
    npm run ai:extract           # agreement → milestone plan on the demo email (needs ANTHROPIC_API_KEY)
    npm run ai:verify            # verification agent on a sample delivery (INJECT=1 for an injection attempt)
    npm test                     # unit tests: payout policy, money flow, disputes, webhooks, SSRF guard (no accounts needed)
+   npm run test:pg              # the same tests against Postgres (PGlite, in-process)
    npm run dev                  # http://localhost:3000
    ```
 4. Optional: once deployed, add a webhook for `https://<host>/api/webhooks/paypal` in the PayPal dashboard and set `PAYPAL_WEBHOOK_ID`. Locally the app polls payout status instead.
@@ -82,7 +83,9 @@ Requires Node 20+, a PayPal developer account and an Anthropic API key.
 | `lib/escrow.ts` | Escrow state machine and guardrails |
 | `lib/ai.ts` | Claude: agreement → milestone plan (structured output) |
 | `lib/projects.ts` | Plan lifecycle: AI draft, edits, two-party approval |
-| `lib/store.ts` | Persistence (JSON file for now) and the seeded demo scenario |
+| `lib/store.ts` | Domain types, data access and the demo scenario |
+| `lib/db.ts` | Storage backends: JSON file (local) or Postgres (`DATABASE_URL`, e.g. Neon); uploads and processed webhook ids included |
+| `lib/files.ts` | Short-lived signed URLs for uploaded evidence |
 | `lib/verify.ts` | Verification agent (Claude + tools) and the payout decision policy |
 | `lib/evidence.ts` | Evidence tools: GitHub pull requests, public web pages (SSRF-guarded) |
 | `lib/delivery.ts` | Submit work, run the review, challenge window, disputes, auto-release |

@@ -20,15 +20,14 @@ export default function ProjectPage() {
   const [role, setRole] = useState<Role | null>(null);
   const [invite, setInvite] = useState<Invite | null>(null);
 
-  // Arriving via a personal link (?t=…): check it with the server, keep it, and drop it from the URL.
+  // Arriving via a personal link (…#t=token): the token sits in the URL fragment, which browsers
+  // never send to the server. Check it with the API, keep it, and drop it from the address bar.
   useEffect(() => {
     (async () => {
-      const url = new URL(window.location.href);
-      const t = url.searchParams.get("t");
+      const t = new URLSearchParams(window.location.hash.slice(1)).get("t");
       let fromLink: Role | null = null;
       if (t) {
-        url.searchParams.delete("t");
-        window.history.replaceState(null, "", url.pathname + url.search);
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
         try {
           fromLink = (await api<ProjectView>(`/api/projects/${id}`, "GET", undefined, t)).viewerRole;
           saveToken(id, fromLink, t);

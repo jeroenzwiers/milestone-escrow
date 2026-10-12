@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, fileUrl, money } from "@/lib/client";
+import { api, money } from "@/lib/client";
 import type { AuditEvent, Milestone, Role, Submission } from "@/lib/store";
 import { MediationPanel } from "./MediationPanel";
 import { PayPalButton } from "./PayPalButton";
@@ -115,8 +115,8 @@ function SubmissionSummary({ s, count }: { s: Submission; count: number }) {
       {s.files.length > 0 && (
         <div className="thumbs">
           {s.files.map((f) => (
-            <a key={f.path} href={fileUrl(f.path)} target="_blank" rel="noreferrer">
-              {f.mediaType.startsWith("image/") ? <img src={fileUrl(f.path)} alt={f.name} /> : <span className="file">{f.name}</span>}
+            <a key={f.path} href={f.url} target="_blank" rel="noreferrer">
+              {f.mediaType.startsWith("image/") ? <img src={f.url} alt={f.name} /> : <span className="file">{f.name}</span>}
             </a>
           ))}
         </div>

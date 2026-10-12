@@ -35,8 +35,9 @@ export function roleFor(project: Pick<Project, "access">, token: string | null |
   return null;
 }
 
+// Header only: link tokens are never accepted from URLs, so they don't end up in logs.
 function tokenOf(req: Request): string | null {
-  return req.headers.get(TOKEN_HEADER) ?? new URL(req.url).searchParams.get("t");
+  return req.headers.get(TOKEN_HEADER);
 }
 
 /** Resolve the caller's role on a project, or fail with 401/403. */

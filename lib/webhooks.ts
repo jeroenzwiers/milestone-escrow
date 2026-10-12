@@ -1,16 +1,16 @@
 // Applies PayPal webhook events to milestones. Status updates are idempotent;
 // PayPal may deliver an event more than once.
-import { findMilestone, logEvent, updateMilestone } from "./store";
+import { findMilestone, isEventProcessed, logEvent, markEventProcessed, updateMilestone } from "./store";
 
 type WebhookEvent = { id: string; event_type: string; resource: Record<string, any> };
 
 // Only successfully processed events count as seen: if processing fails, PayPal's
-// retry must be processed again rather than dropped as a duplicate.
-const seen = new Set<string>();
+// retry must be processed again rather than dropped as a duplicate. Processed ids are
+// kept in the storage backend, so they survive restarts when it is Postgres.
 const inFlight = new Map<string, Promise<string>>();
 
 export async function handlePayPalEvent(event: WebhookEvent): Promise<string> {
-  if (seen.has(event.id)) return "duplicate";
+  if (await isEventProcessed(event.id)) return "duplicate";
   const running = inFlight.get(event.id);
   if (running) return running;
 
@@ -18,7 +18,7 @@ export async function handlePayPalEvent(event: WebhookEvent): Promise<string> {
   inFlight.set(event.id, work);
   try {
     const result = await work;
-    seen.add(event.id);
+    await markEventProcessed(event.id);
     return result;
   } finally {
     inFlight.delete(event.id);

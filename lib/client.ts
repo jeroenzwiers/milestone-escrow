@@ -27,11 +27,6 @@ export async function api<T>(path: string, method = "GET", body?: unknown, token
   return json as T;
 }
 
-/** URL for an uploaded file; <img> can't send headers, so the token goes in the query. */
-export function fileUrl(path: string): string {
-  return `/api/files?path=${encodeURIComponent(path)}${activeToken ? `&t=${encodeURIComponent(activeToken)}` : ""}`;
-}
-
 export const money = (cents: number, currency: string) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency }).format(cents / 100);
 
@@ -90,4 +85,5 @@ export type Invite = { role: Role; token: string };
 export const loadInvite = (projectId: string) => read<Invite>(inviteKey(projectId));
 export const saveInvite = (projectId: string, invite: Invite | null) => write(inviteKey(projectId), invite);
 
-export const linkFor = (projectId: string, token: string) => `${window.location.origin}/projects/${projectId}?t=${encodeURIComponent(token)}`;
+// The token goes in the fragment (#), which is never sent to the server or written to its logs.
+export const linkFor = (projectId: string, token: string) => `${window.location.origin}/projects/${projectId}#t=${encodeURIComponent(token)}`;

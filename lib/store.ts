@@ -1,7 +1,5 @@
-// Persistence: a JSON file in data/. Swap for Postgres before deploying
-// (Render's disk is ephemeral); everything goes through these functions.
-import { promises as fs } from "node:fs";
-import path from "node:path";
+// Domain types and data access. Storage itself (JSON file or Postgres) is in lib/db.ts.
+import { backend } from "./db";
 
 export type MilestoneStatus =
   | "draft" // agreed (or still being agreed), not yet paid by the client
@@ -87,7 +85,8 @@ export type Submission = {
   at: string;
   note: string;
   links: string[];
-  files: { name: string; path: string; mediaType: string; size: number }[];
+  // `path` is the storage key; `url` is a short-lived signed link added when a project is served.
+  files: { name: string; path: string; mediaType: string; size: number; url?: string }[];
   verification?: Verification;
 };
 
@@ -110,103 +109,65 @@ export type Dispute = {
 
 export type ProjectWithMilestones = Project & { milestones: Milestone[] };
 
-const DB_FILE = path.join(process.env.DATA_DIR ?? path.join(process.cwd(), "data"), "db.json");
-
 export type Db = { projects: Project[]; milestones: Milestone[] };
-
-async function load(): Promise<Db> {
-  try {
-    const db = JSON.parse(await fs.readFile(DB_FILE, "utf8"));
-    if (Array.isArray(db.projects)) return db;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-  }
-  return { projects: [], milestones: [] };
-}
-
-async function save(db: Db) {
-  await fs.mkdir(path.dirname(DB_FILE), { recursive: true });
-  await fs.writeFile(DB_FILE, JSON.stringify(db, null, 2));
-}
-
-// Serialize writes so concurrent requests can't clobber each other's changes.
-let queue: Promise<unknown> = Promise.resolve();
-function exclusive<T>(fn: () => Promise<T>): Promise<T> {
-  const run = queue.then(fn, fn);
-  queue = run.catch(() => {});
-  return run;
-}
 
 export function newId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export async function listProjects(): Promise<ProjectWithMilestones[]> {
-  const db = await load();
-  return db.projects
-    .map((p) => ({ ...p, milestones: db.milestones.filter((m) => m.projectId === p.id) }))
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
 export async function getProject(id: string): Promise<ProjectWithMilestones | undefined> {
-  const db = await load();
-  const p = db.projects.find((x) => x.id === id);
-  return p && { ...p, milestones: db.milestones.filter((m) => m.projectId === id) };
+  const found = await backend.getProject(id);
+  return found && { ...(found.project as Project), milestones: found.milestones as Milestone[] };
 }
 
 export async function getMilestone(id: string): Promise<Milestone | undefined> {
-  return (await load()).milestones.find((m) => m.id === id);
+  return (await backend.getMilestone(id)) as Milestone | undefined;
 }
 
 export async function findMilestone(pred: (m: Milestone) => boolean): Promise<Milestone | undefined> {
-  return (await load()).milestones.find(pred);
+  return ((await backend.allMilestones()) as Milestone[]).find(pred);
 }
 
 export async function listMilestonesWhere(pred: (m: Milestone) => boolean): Promise<Milestone[]> {
-  return (await load()).milestones.filter(pred);
+  return ((await backend.allMilestones()) as Milestone[]).filter(pred);
 }
 
 export function insertProject(project: Project, milestones: Milestone[]): Promise<void> {
-  return exclusive(async () => {
-    const db = await load();
-    db.projects.push(project);
-    db.milestones.push(...milestones);
-    await save(db);
-  });
+  return backend.insert(project, milestones);
 }
 
 export function updateProject(id: string, fn: (p: Project, milestones: Milestone[]) => void): Promise<ProjectWithMilestones> {
-  return exclusive(async () => {
-    const db = await load();
-    const p = db.projects.find((x) => x.id === id);
-    if (!p) throw new Error(`Project ${id} not found`);
-    const milestones = db.milestones.filter((m) => m.projectId === id);
-    fn(p, milestones);
-    await save(db);
-    return { ...p, milestones };
+  return backend.mutateProject(id, (p, ms) => {
+    fn(p as Project, ms as Milestone[]);
+    return { ...(p as Project), milestones: ms as Milestone[] };
   });
 }
 
 export function updateMilestone(id: string, fn: (m: Milestone) => void): Promise<Milestone> {
-  return exclusive(async () => {
-    const db = await load();
-    const m = db.milestones.find((x) => x.id === id);
-    if (!m) throw new Error(`Milestone ${id} not found`);
-    fn(m);
-    await save(db);
-    return m;
+  return backend.mutateMilestone(id, (m) => {
+    fn(m as Milestone);
+    return m as Milestone;
   });
 }
 
 /** Replace all data with the demo scenario under fixed ids. Used by tests. */
 export function resetStore(): Promise<void> {
-  return exclusive(() => save(demoScenario("p_bakery", ["m1", "m2", "m3"])));
+  const { projects, milestones } = demoScenario("p_bakery", ["m1", "m2", "m3"]);
+  return backend.replaceAll(projects, milestones);
 }
 
 /** A fresh copy of the demo scenario with its own ids, e.g. one per visitor. */
 export function newDemoScenario(): Db {
   return demoScenario(newId("p"), [newId("m"), newId("m"), newId("m")]);
 }
+
+// Uploaded evidence files, stored in the same backend as the data.
+export const putFile = (key: string, mediaType: string, data: Buffer) => backend.putFile(key, { mediaType, data });
+export const getFile = (key: string) => backend.getFile(key);
+
+// Webhook idempotency that survives restarts when backed by Postgres.
+export const isEventProcessed = (id: string) => backend.isProcessed(id);
+export const markEventProcessed = (id: string) => backend.markProcessed(id);
 
 export function logEvent(target: { events: AuditEvent[] }, type: string, detail?: string) {
   target.events.push({ at: new Date().toISOString(), type, detail });

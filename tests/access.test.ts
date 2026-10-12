@@ -51,8 +51,8 @@ describe("personal links", () => {
     await assert.rejects(authorizeMilestone(req(tokens.client), "m1", ["freelancer"]), (e: any) => e.status === 403);
   });
 
-  it("accepts the token from the query string (used for file links)", async () => {
-    assert.equal((await authorizeProject(req(undefined, tokens.freelancer), "p_bakery")).role, "freelancer");
+  it("does not accept a token from the URL, where it could leak into logs", async () => {
+    await assert.rejects(authorizeProject(req(undefined, tokens.freelancer), "p_bakery"), (e: any) => e.status === 401);
   });
 
   it("does not accept one project's link for another project", async () => {

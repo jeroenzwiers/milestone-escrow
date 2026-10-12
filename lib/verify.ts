@@ -1,14 +1,12 @@
 // The verification agent: Claude inspects a delivery with tools and judges each
 // acceptance criterion. Which way the money goes is decided by policy in code
 // from those per-criterion verdicts, never by the model directly.
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import type Anthropic from "@anthropic-ai/sdk";
 import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { AiError, anthropic, MODEL } from "./ai";
 import { EvidenceError, fetchGitHubPullRequest, fetchWebPage, isGitHubPullRequest } from "./evidence";
-import type { CriterionVerdict, Milestone, Project, Submission, TraceEntry, Verification } from "./store";
+import { getFile, type CriterionVerdict, type Milestone, type Project, type Submission, type TraceEntry, type Verification } from "./store";
 
 // Below this, a "met" verdict isn't trusted enough to release money automatically.
 const AUTO_APPROVE_MIN_CONFIDENCE = 0.8;
@@ -47,7 +45,12 @@ const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp
 async function evidenceBlocks(submission: Submission): Promise<Anthropic.Beta.BetaContentBlockParam[]> {
   const blocks: Anthropic.Beta.BetaContentBlockParam[] = [];
   for (const file of submission.files) {
-    const data = (await fs.readFile(path.join(process.cwd(), file.path))).toString("base64");
+    const stored = await getFile(file.path);
+    if (!stored) {
+      blocks.push({ type: "text", text: `Attached file ${file.name} could not be loaded.` });
+      continue;
+    }
+    const data = stored.data.toString("base64");
     if (IMAGE_TYPES.has(file.mediaType)) {
       blocks.push({ type: "text", text: `Attached file: ${file.name}` });
       blocks.push({ type: "image", source: { type: "base64", media_type: file.mediaType as "image/png", data } });

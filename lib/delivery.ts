@@ -1,8 +1,6 @@
 // Delivery lifecycle of a funded milestone: the freelancer submits work, the AI
 // reviewer checks it, and the outcome either schedules an automatic release
 // after a challenge window or hands the decision back to the people involved.
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { EscrowError, settle } from "./escrow";
 import {
   getMilestone,
@@ -10,6 +8,7 @@ import {
   listMilestonesWhere,
   logEvent,
   newId,
+  putFile,
   updateMilestone,
   type Milestone,
   type Role,
@@ -56,12 +55,10 @@ export async function submitWork(id: string, input: { note: string; links: strin
   }
 
   const submission: Submission = { id: newId("s"), at: new Date().toISOString(), note: input.note.trim(), links, files: [] };
-  const dir = path.join("data", "uploads", m.id, submission.id);
-  await fs.mkdir(path.join(process.cwd(), dir), { recursive: true });
   for (const [i, f] of files.entries()) {
-    const safe = `${i + 1}-${f.name.replace(/[^\w.-]+/g, "_").slice(-80)}`;
-    await fs.writeFile(path.join(process.cwd(), dir, safe), Buffer.from(await f.arrayBuffer()));
-    submission.files.push({ name: f.name, path: path.join(dir, safe), mediaType: f.type, size: f.size });
+    const key = `uploads/${m.id}/${submission.id}/${i + 1}-${f.name.replace(/[^\w.-]+/g, "_").slice(-80)}`;
+    await putFile(key, f.type, Buffer.from(await f.arrayBuffer()));
+    submission.files.push({ name: f.name, path: key, mediaType: f.type, size: f.size });
   }
 
   const updated = await updateMilestone(id, (x) => {

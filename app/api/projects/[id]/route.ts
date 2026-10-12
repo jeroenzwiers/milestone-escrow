@@ -2,6 +2,7 @@ import { authorizeProject } from "@/lib/access";
 import { handle, type RouteContext } from "@/lib/api";
 import { processDue } from "@/lib/delivery";
 import { refreshPayout } from "@/lib/escrow";
+import { withFileUrls } from "@/lib/files";
 import { getProject } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,6 @@ export function GET(req: Request, { params }: RouteContext) {
       project = (await getProject(id))!;
     }
     const { access: _hashes, ...visible } = project;
-    return { ...visible, viewerRole: role };
+    return { ...visible, milestones: withFileUrls(visible.milestones), viewerRole: role };
   });
 }
