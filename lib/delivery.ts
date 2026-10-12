@@ -12,6 +12,7 @@ import {
   newId,
   updateMilestone,
   type Milestone,
+  type Role,
   type Submission,
   type Verification,
 } from "./store";
@@ -128,15 +129,23 @@ async function runReview(id: string) {
   }
 }
 
-/** Client objects during the challenge window: stops the automatic release. */
-export async function dispute(id: string, reason: string) {
-  if (!reason.trim()) throw new EscrowError("Explain what is wrong with the delivery");
+/**
+ * A party contests the outcome. The client can object to a verified delivery
+ * (stopping the automatic release) or to one the reviewer was unsure about;
+ * the freelancer can contest a "changes requested" verdict.
+ */
+export async function dispute(id: string, role: Role, reason: string) {
+  if (!reason.trim()) throw new EscrowError("Explain what you disagree with");
+  const allowed: Record<Role, Milestone["status"][]> = {
+    client: ["verified", "needs_review"],
+    freelancer: ["changes_requested"],
+  };
   return updateMilestone(id, (m) => {
-    if (m.status !== "verified" && m.status !== "needs_review") throw new EscrowError(`Can't object while the milestone is ${m.status.replace("_", " ")}`);
+    if (!allowed[role].includes(m.status)) throw new EscrowError(`The ${role} can't open a dispute while the milestone is ${m.status.replace("_", " ")}`);
     m.status = "disputed";
     m.releaseAt = undefined;
-    m.dispute = { at: new Date().toISOString(), reason: reason.trim() };
-    logEvent(m, "disputed", reason.trim());
+    m.dispute = { at: new Date().toISOString(), raisedBy: role, statements: { [role]: reason.trim() } };
+    logEvent(m, "disputed", `${role}: ${reason.trim()}`);
   });
 }
 

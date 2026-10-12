@@ -159,3 +159,19 @@ button.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
 .decision textarea { margin-top: 4px; }
 .manual { margin-top: 12px; }
 .settlement { margin: 12px 0 0; font-size: 14px; }
+
+/* Week 4: mediation */
+.mediation { margin-top: 14px; padding: 14px; border-radius: 8px; background: #fbf7f2; border: 1px solid #f1e3cf; }
+.mediation .label { margin-top: 0; }
+.statements { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.statements p { margin: 0; }
+.statements .quote { margin-top: 4px; }
+.proposal { margin-top: 14px; padding: 14px; border-radius: 8px; background: #fff; border: 1px solid var(--border); }
+.proposal p { margin: 8px 0 0; }
+.split { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.split div { display: flex; flex-direction: column; }
+.split div:last-child { text-align: right; }
+.split strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.bar { height: 8px; margin-top: 8px; border-radius: 99px; background: #e6efff; overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--accent); }
+@media (max-width: 600px) { .statements, .row { grid-template-columns: 1fr; } }

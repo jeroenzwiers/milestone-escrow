@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, money } from "@/lib/client";
 import type { AuditEvent, Milestone, Role, Submission } from "@/lib/store";
+import { MediationPanel } from "./MediationPanel";
 import { PayPalButton } from "./PayPalButton";
 import { SubmitWorkForm } from "./SubmitWorkForm";
 import { VerificationPanel } from "./VerificationPanel";
@@ -69,7 +70,10 @@ export function MilestoneCard({
 
       {(m.status === "funded" || m.status === "changes_requested") &&
         (role === "freelancer" ? (
-          <SubmitWorkForm milestone={m} onSubmitted={onChanged} />
+          <>
+            <SubmitWorkForm milestone={m} onSubmitted={onChanged} />
+            {m.status === "changes_requested" && <ContestVerdict m={m} busy={busy} run={run} />}
+          </>
         ) : (
           <p className="hint">{m.status === "funded" ? "Funds are held in escrow until the freelancer delivers." : "Waiting for the freelancer to resubmit."}</p>
         ))}
@@ -78,14 +82,9 @@ export function MilestoneCard({
 
       {m.status === "needs_review" && (role === "client" ? <ClientDecision m={m} busy={busy} run={run} /> : <p className="hint">The client is reviewing your delivery.</p>)}
 
-      {m.status === "disputed" && m.dispute && (
-        <div className="notice warn">
-          <strong>Client objected:</strong> {m.dispute.reason}
-          {role === "client" && <ClientDecision m={m} busy={busy} run={run} />}
-        </div>
-      )}
+      {m.status === "disputed" && m.dispute && <MediationPanel m={m} role={role} busy={busy} run={run} />}
 
-      {role === "client" && HELD.has(m.status) && m.status !== "needs_review" && m.status !== "disputed" && <ManualSettlement m={m} busy={busy} run={run} />}
+      {role === "client" && HELD.has(m.status) && m.status !== "needs_review" && <ManualSettlement m={m} busy={busy} run={run} />}
 
       {(m.payout || m.refund) && (
         <p className="settlement">
@@ -173,13 +172,36 @@ function ChallengeWindow({ m, role, busy, run }: { m: Milestone; role: Role; bus
         <div>
           <textarea rows={3} placeholder="What's wrong with the delivery?" value={reason} onChange={(e) => setReason(e.target.value)} />
           <div className="actions">
-            <button className="danger" disabled={busy || !reason.trim()} onClick={() => run(() => api(`/api/milestones/${m.id}/dispute`, "POST", { reason }))}>
+            <button className="danger" disabled={busy || !reason.trim()} onClick={() => run(() => api(`/api/milestones/${m.id}/dispute`, "POST", { role: "client", reason }))}>
               Stop release and object
             </button>
             <button onClick={() => setObjecting(false)}>Cancel</button>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ContestVerdict({ m, busy, run }: { m: Milestone; busy: boolean; run: (fn: () => Promise<unknown>) => Promise<boolean> }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  if (!open) {
+    return (
+      <p className="small muted">
+        Disagree with the review? <button className="link" onClick={() => setOpen(true)}>Open a dispute</button>
+      </p>
+    );
+  }
+  return (
+    <div className="decision">
+      <textarea rows={3} placeholder="Why does your delivery meet the agreement?" value={reason} onChange={(e) => setReason(e.target.value)} />
+      <div className="actions">
+        <button className="danger" disabled={busy || !reason.trim()} onClick={() => run(() => api(`/api/milestones/${m.id}/dispute`, "POST", { role: "freelancer", reason }))}>
+          Open dispute
+        </button>
+        <button onClick={() => setOpen(false)}>Cancel</button>
+      </div>
     </div>
   );
 }

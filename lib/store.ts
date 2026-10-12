@@ -11,7 +11,7 @@ export type MilestoneStatus =
   | "changes_requested" // reviewer (or client) found unmet criteria; freelancer can resubmit
   | "needs_review" // reviewer couldn't decide; the client decides
   | "verified" // all criteria met; auto-release after the challenge window
-  | "disputed" // client objected during the challenge window
+  | "disputed" // a party contested the outcome; AI mediation proposes a split
   | "released" // fully paid out to the freelancer
   | "refunded" // fully returned to the client
   | "split"; // partly paid out, partly refunded
@@ -54,7 +54,7 @@ export type Milestone = {
   refund?: { id: string; amountCents: number; status: string };
   submissions?: Submission[];
   releaseAt?: string; // end of the challenge window when status is "verified"
-  dispute?: { at: string; reason: string };
+  dispute?: Dispute;
   events: AuditEvent[];
 };
 
@@ -87,6 +87,23 @@ export type Submission = {
   links: string[];
   files: { name: string; path: string; mediaType: string; size: number }[];
   verification?: Verification;
+};
+
+export type SettlementProposal = {
+  at: string;
+  freelancerSharePercent: number; // 0..100
+  shareCents: number;
+  rationale: string;
+  considerations: { criterion: string; assessment: string }[];
+  acceptedBy: Record<Role, boolean>;
+};
+
+export type Dispute = {
+  at: string;
+  raisedBy: Role;
+  // Each party's side of the story, in their own words.
+  statements: Partial<Record<Role, string>>;
+  proposal?: SettlementProposal;
 };
 
 export type ProjectWithMilestones = Project & { milestones: Milestone[] };

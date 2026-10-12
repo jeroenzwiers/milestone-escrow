@@ -10,7 +10,8 @@ Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Eve
 - [x] **Week 1: money flow.** Fund a milestone (JS SDK v6 + Orders v2), hold it, then release (Payouts), refund (Captures refund) or split between both.
 - [x] **Week 2: AI milestone plans.** Paste a quote, email or chat. Claude turns it into milestones with amounts, objectively checkable acceptance criteria and the evidence to submit, and flags gaps that could cause a dispute later. Both parties can edit the plan and must approve the same version before anything can be funded.
 - [x] **Week 3: AI verification.** The freelancer submits notes, links and screenshots/PDFs. A Claude agent inspects the evidence with tools (GitHub pull requests via the API, public web pages) and judges every acceptance criterion with an explanation and a confidence score. Policy in code turns that into a decision: all met with high confidence starts a challenge window followed by automatic payout; anything unmet goes back to the freelancer with feedback; uncertainty goes to the client. PayPal webhooks keep payout status current.
-- [ ] Week 4: AI mediation and split proposals, polish, hosted demo.
+- [x] **Week 4a: AI mediation.** The client can object to a verified delivery and the freelancer can contest a rejection. Both state their side, Claude proposes a split with reasoning per criterion, and PayPal executes it (partial payout and partial refund) only once both parties accept the same proposal.
+- [ ] Week 4b: hosted demo, demo deliverable, polish.
 
 ## How the AI is kept in check
 
@@ -62,10 +63,11 @@ Requires Node 20+, a PayPal developer account and an Anthropic API key.
 | `lib/verify.ts` | Verification agent (Claude + tools) and the payout decision policy |
 | `lib/evidence.ts` | Evidence tools: GitHub pull requests, public web pages (SSRF-guarded) |
 | `lib/delivery.ts` | Submit work, run the review, challenge window, disputes, auto-release |
+| `lib/mediation.ts` | Disputes: statements, AI split proposal, two-party acceptance |
 | `lib/webhooks.ts` | PayPal webhook events (payout status, disputes) |
 | `lib/ratelimit.ts` | Caps AI calls so a public demo can't drain the API credit |
 | `app/api/projects/…` | Create from agreement, edit milestones, approve |
-| `app/api/milestones/…` | `order`, `capture`, `submit`, `dispute`, `request-changes`, `release` (full or split), `refund` |
+| `app/api/milestones/…` | `order`, `capture`, `submit`, `dispute`, `request-changes`, `statement`, `mediate`, `accept`, `release` (full or split), `refund` |
 | `app/api/webhooks/paypal` | Verified PayPal webhook receiver |
 | `app/`, `components/` | UI: project list, new project, plan review, funding with the PayPal JS SDK v6 |
 | `scripts/` | Sandbox setup check and end-to-end money flow test |
