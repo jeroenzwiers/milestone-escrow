@@ -18,3 +18,4 @@ demo/video/frames/
 demo/video/*.txt
 demo/video/*.m4a
 demo/video/*.mp4
+demo/audio/samples/

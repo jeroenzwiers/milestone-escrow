@@ -17,7 +17,10 @@
     "test:pg": "node scripts/test-pglite.mjs",
     "db:check": "tsx --env-file-if-exists=.env.local scripts/db-check.ts",
     "ai:plan": "tsx --env-file-if-exists=.env.local scripts/ai-plan.ts",
-    "sandbox:team-e2e": "tsx --env-file-if-exists=.env.local scripts/sandbox-team-e2e.ts"
+    "sandbox:team-e2e": "tsx --env-file-if-exists=.env.local scripts/sandbox-team-e2e.ts",
+    "video:voice": "D:/tts/milestone-escrow/venv/Scripts/python.exe scripts/video/tts-kokoro.py",
+    "video:record": "node scripts/video/record.mjs",
+    "video:build": "python scripts/video/mux.py"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
