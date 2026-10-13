@@ -124,18 +124,17 @@ export function createOrder(opts: {
           amount: { currency_code: opts.currency, value: formatAmount(opts.amountCents) },
         },
       ],
-      ...(opts.returnUrl && {
-        payment_source: {
-          paypal: {
-            experience_context: {
-              user_action: "PAY_NOW",
-              shipping_preference: "NO_SHIPPING",
-              return_url: opts.returnUrl,
-              cancel_url: opts.cancelUrl ?? opts.returnUrl,
-            },
+      // Nothing is shipped (it pays for services), and the buyer pays right away rather than
+      // "continuing to review the order" on a shop page that doesn't exist.
+      payment_source: {
+        paypal: {
+          experience_context: {
+            user_action: "PAY_NOW",
+            shipping_preference: "NO_SHIPPING",
+            ...(opts.returnUrl && { return_url: opts.returnUrl, cancel_url: opts.cancelUrl ?? opts.returnUrl }),
           },
         },
-      }),
+      },
     },
     `order-${opts.referenceId}-${Date.now()}`,
   );
