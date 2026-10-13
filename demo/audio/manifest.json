@@ -1,0 +1,154 @@
+[
+  {
+    "order": 1,
+    "key": "114a9a04",
+    "scene": 1,
+    "cue": "intro",
+    "text": "Sanne runs a bakery. She wants online lunch orders by next week, and she has three hundred euros.",
+    "file": "114a9a04.mp3"
+  },
+  {
+    "order": 2,
+    "key": "be014a36",
+    "scene": 1,
+    "cue": "home",
+    "text": "Nobody sells that as one package. She'd need a developer, someone for the menu, and a courier, and she'd have to coordinate them and pay up front.",
+    "file": "be014a36.mp3"
+  },
+  {
+    "order": 3,
+    "key": "b8eb2b01",
+    "scene": 2,
+    "cue": "goal-form",
+    "text": "With Milestone Escrow she only states the goal and the budget. Agents do the rest.",
+    "file": "b8eb2b01.mp3"
+  },
+  {
+    "order": 4,
+    "key": "afeed42c",
+    "scene": 3,
+    "cue": "trace-start",
+    "text": "A planner agent asks providers for offers. Each provider is an agent with its own private terms.",
+    "file": "afeed42c.mp3"
+  },
+  {
+    "order": 5,
+    "key": "7131f58c",
+    "scene": 3,
+    "cue": "trace-decline",
+    "text": "The agency declines: it's booked for two weeks.",
+    "file": "7131f58c.mp3"
+  },
+  {
+    "order": 6,
+    "key": "d7571a77",
+    "scene": 3,
+    "cue": "trace-courier",
+    "text": "The cheap courier only rides on days with ten or more orders, which is risky in a launch week. The planner weighs that, picks the courier without a minimum, and submits a plan.",
+    "file": "d7571a77.mp3"
+  },
+  {
+    "order": 7,
+    "key": "ab486546",
+    "scene": 3,
+    "cue": "plan",
+    "text": "Fixed rules check it: within budget, every price exactly what the provider agreed to. Two hundred and ninety of three hundred euros.",
+    "file": "ab486546.mp3"
+  },
+  {
+    "order": 8,
+    "key": "67c1b771",
+    "scene": 4,
+    "cue": "paypal",
+    "text": "Sanne approves and pays once, with PayPal.",
+    "file": "67c1b771.mp3"
+  },
+  {
+    "order": 9,
+    "key": "eca369dd",
+    "scene": 4,
+    "cue": "funded",
+    "text": "The money sits in escrow. Nobody is paid until their part is verified.",
+    "file": "eca369dd.mp3"
+  },
+  {
+    "order": 10,
+    "key": "6ffc03d2",
+    "scene": 5,
+    "cue": "dropout",
+    "text": "Then the courier drops out.",
+    "file": "6ffc03d2.mp3"
+  },
+  {
+    "order": 11,
+    "key": "ef8d4d71",
+    "scene": 5,
+    "cue": "replan-trace",
+    "text": "The planner replans. It offers the other courier more to drop the minimum, gets a no, and adds a pickup option instead, so quiet days are still covered.",
+    "file": "ef8d4d71.mp3"
+  },
+  {
+    "order": 12,
+    "key": "2a5a5078",
+    "scene": 5,
+    "cue": "plan-v2",
+    "text": "Sanne sees exactly what changes: seventy-five euros back for the replaced work, a small payment for the new courier. Nothing moves until she approves.",
+    "file": "2a5a5078.mp3"
+  },
+  {
+    "order": 13,
+    "key": "6aad5423",
+    "scene": 6,
+    "cue": "deliver-daan",
+    "text": "Each provider delivers.",
+    "file": "6aad5423.mp3"
+  },
+  {
+    "order": 14,
+    "key": "8d5e1ae9",
+    "scene": 6,
+    "cue": "review-daan",
+    "text": "The reviewer opens Daan's pull request, finds PayPal checkout and pickup slots, but no confirmation email. His money stays in escrow, and he gets concrete feedback.",
+    "file": "8d5e1ae9.mp3"
+  },
+  {
+    "order": 15,
+    "key": "ee574c7d",
+    "scene": 6,
+    "cue": "review-courier",
+    "text": "The courier's delivery log checks out, criterion by criterion.",
+    "file": "ee574c7d.mp3"
+  },
+  {
+    "order": 16,
+    "key": "695662df",
+    "scene": 6,
+    "cue": "payout",
+    "text": "After a short window in which Sanne could object, PayPal pays the courier directly.",
+    "file": "695662df.mp3"
+  },
+  {
+    "order": 17,
+    "key": "0007e30a",
+    "scene": 7,
+    "cue": "audit",
+    "text": "The agents negotiate and judge, but they never move money on their own. Code checks every plan, decides when a payout is allowed, and every change needs Sanne's approval.",
+    "file": "0007e30a.mp3"
+  },
+  {
+    "order": 18,
+    "key": "8e6c5bd6",
+    "scene": 7,
+    "cue": "offers",
+    "text": "Everything the agents did is on the record.",
+    "file": "8e6c5bd6.mp3"
+  },
+  {
+    "order": 19,
+    "key": "f1ce466b",
+    "scene": 7,
+    "cue": "title",
+    "text": "Give it a goal and a budget, and the team that can make it happen comes together, and gets paid when the work is done.",
+    "file": "f1ce466b.mp3"
+  }
+]

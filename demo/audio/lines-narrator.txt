@@ -1,0 +1,37 @@
+Sanne runs a bakery. She wants online lunch orders by next week, and she has three hundred euros.
+
+Nobody sells that as one package. She'd need a developer, someone for the menu, and a courier, and she'd have to coordinate them and pay up front.
+
+With Milestone Escrow she only states the goal and the budget. Agents do the rest.
+
+A planner agent asks providers for offers. Each provider is an agent with its own private terms.
+
+The agency declines: it's booked for two weeks.
+
+The cheap courier only rides on days with ten or more orders, which is risky in a launch week. The planner weighs that, picks the courier without a minimum, and submits a plan.
+
+Fixed rules check it: within budget, every price exactly what the provider agreed to. Two hundred and ninety of three hundred euros.
+
+Sanne approves and pays once, with PayPal.
+
+The money sits in escrow. Nobody is paid until their part is verified.
+
+Then the courier drops out.
+
+The planner replans. It offers the other courier more to drop the minimum, gets a no, and adds a pickup option instead, so quiet days are still covered.
+
+Sanne sees exactly what changes: seventy-five euros back for the replaced work, a small payment for the new courier. Nothing moves until she approves.
+
+Each provider delivers.
+
+The reviewer opens Daan's pull request, finds PayPal checkout and pickup slots, but no confirmation email. His money stays in escrow, and he gets concrete feedback.
+
+The courier's delivery log checks out, criterion by criterion.
+
+After a short window in which Sanne could object, PayPal pays the courier directly.
+
+The agents negotiate and judge, but they never move money on their own. Code checks every plan, decides when a payout is allowed, and every change needs Sanne's approval.
+
+Everything the agents did is on the record.
+
+Give it a goal and a budget, and the team that can make it happen comes together, and gets paid when the work is done.

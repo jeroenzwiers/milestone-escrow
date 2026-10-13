@@ -1,0 +1,338 @@
+// Records the demo video's picture: a real run of the team flow in a visible Chrome,
+// with stills taken per narration line (demo/video/narration.json, by "cue").
+//
+// Adapted from the Study Coach recorder, with one difference in approach. There the
+// page played the clips and the recorder followed in real time. Here the agents take a
+// minute and PayPal waits for a person to log in, so this records a storyboard instead:
+// for every line the stills that belong to it, in order. scripts/video/mux.py then
+// gives each line exactly the length of its clip and spreads that line's stills over
+// it. The waiting disappears; everything shown really happened.
+//
+//   npm run build && npm start          # the app on http://localhost:3000 (set CHALLENGE_WINDOW_MINUTES=1)
+//   node scripts/video/record.mjs       # frames + demo/video/storyboard.json
+//   python scripts/video/mux.py         # the finished mp4
+//
+// The two PayPal payments are made by hand in the PayPal window with the client
+// sandbox account; the recorder waits for them.
+import fs from "node:fs";
+import path from "node:path";
+import puppeteer from "puppeteer-core";
+
+const CHROME = process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe";
+const BASE = process.env.DEMO_URL || "http://localhost:3000";
+const OUT = path.resolve("demo/video");
+const FRAMES = path.join(OUT, "frames");
+const EVIDENCE_PDF = path.resolve("demo/evidence/fietskoerier-trial-week-log.pdf");
+const PR_URL = "https://github.com/jeroenzwiers/gouden-korst-webshop/pull/2";
+const DELIVERY = ["BezorgBende", "Fietskoerier Demodorp"];
+
+fs.rmSync(FRAMES, { recursive: true, force: true });
+fs.mkdirSync(FRAMES, { recursive: true });
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const say = (msg) => console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+
+// 1280x720 at 1.5x gives 1920x1080 stills of a page laid out as if zoomed to 150%,
+// so small text survives YouTube (same choice as the Study Coach video).
+const browser = await puppeteer.launch({
+  executablePath: CHROME,
+  headless: false,
+  defaultViewport: null,
+  args: ["--window-size=1300,900", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check"],
+});
+const [page] = await browser.pages();
+await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1.5 });
+
+const board = []; // { cue, file }
+let n = 0;
+async function shot(cue, target = page) {
+  const file = path.join(FRAMES, `f${String(n++).padStart(4, "0")}.jpg`);
+  await target.screenshot({ path: file, type: "jpeg", quality: 92 });
+  board.push({ cue, file: path.relative(OUT, file).replaceAll("\\", "/") });
+}
+
+async function waitFor(fn, { timeout = 120_000, every = 600, label = "condition", arg } = {}) {
+  const until = Date.now() + timeout;
+  for (;;) {
+    const v = await page.evaluate(fn, arg).catch(() => null);
+    if (v) return v;
+    if (Date.now() > until) throw new Error(`Timed out waiting for ${label}`);
+    await sleep(every);
+  }
+}
+
+// Click the first element matching `selector` whose text contains `text`.
+async function click(selector, text) {
+  const ok = await page.evaluate(
+    (sel, t) => {
+      const el = [...document.querySelectorAll(sel)].find((e) => !t || e.textContent.includes(t));
+      if (!el) return false;
+      el.scrollIntoView({ block: "center" });
+      el.click();
+      return true;
+    },
+    selector,
+    text,
+  );
+  if (!ok) throw new Error(`Nothing to click: ${selector} "${text ?? ""}"`);
+  await sleep(500);
+}
+
+async function scrollTo(selector, text, block = "start") {
+  await page.evaluate(
+    (sel, t, b) => {
+      const el = [...document.querySelectorAll(sel)].find((e) => !t || e.textContent.includes(t));
+      el?.scrollIntoView({ block: b });
+    },
+    selector,
+    text,
+    block,
+  );
+  await sleep(400);
+}
+
+const titleCard = (big, small) => `<!doctype html><html><body style="margin:0;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#0b2a6f;color:#fff;font-family:system-ui,Segoe UI,sans-serif;text-align:center">
+<div style="font-size:15px;letter-spacing:.2em;opacity:.75;text-transform:uppercase">PayPal AI Hackathon</div>
+<div style="font-size:58px;font-weight:700;margin:14px 0 18px">Milestone Escrow</div>
+<div style="font-size:24px;max-width:820px;line-height:1.35">${big}</div>
+<div style="font-size:15px;margin-top:26px;opacity:.75">${small}</div></body></html>`;
+
+// Follow the agents' live trace: a still each time a line is added.
+async function followTrace(cue, doneFn, label, cueFor) {
+  let seen = -1;
+  const until = Date.now() + 6 * 60_000;
+  while (Date.now() < until) {
+    const state = await page.evaluate(() => {
+      const items = [...document.querySelectorAll(".negotiation.live li")];
+      items.at(-1)?.scrollIntoView({ block: "center" });
+      return { count: items.length, texts: items.map((li) => li.textContent) };
+    });
+    if (state.count !== seen && state.count > 0) {
+      seen = state.count;
+      await sleep(150);
+      await shot(cueFor ? cueFor(state.texts) : cue);
+    }
+    if (await page.evaluate(doneFn)) return;
+    await sleep(700);
+  }
+  throw new Error(`Timed out waiting for ${label}`);
+}
+
+// PayPal opens in its own window. Keep stills of it while the user logs in and pays,
+// use the last one before it closes (the pay screen), and wait until the plan is funded.
+async function payWithPayPal(cue) {
+  const popupPromise = new Promise((resolve) => browser.once("targetcreated", async (t) => resolve(await t.page())));
+  // A real (trusted) mouse click: Chrome blocks the PayPal window for a scripted one.
+  await scrollTo(".fund-plan", null, "center");
+  await page.click(".fund-plan paypal-button");
+  const popup = await Promise.race([popupPromise, sleep(20_000).then(() => null)]);
+  say("PayPal window open: log in with the CLIENT sandbox account (sb-ychkk…) and pay.");
+  let last = null;
+  const until = Date.now() + 10 * 60_000;
+  while (Date.now() < until) {
+    if (popup && !popup.isClosed()) {
+      const file = path.join(FRAMES, `popup-${n}.jpg`);
+      try {
+        await popup.screenshot({ path: file, type: "jpeg", quality: 92 });
+        last = file;
+      } catch {}
+    }
+    const funded = await page.evaluate(() => !document.querySelector(".fund-plan") && !!document.querySelector(".milestone"));
+    if (funded) break;
+    await sleep(1500);
+  }
+  if (last) {
+    const file = path.join(FRAMES, `f${String(n++).padStart(4, "0")}.jpg`);
+    fs.renameSync(last, file);
+    board.push({ cue, file: path.relative(OUT, file).replaceAll("\\", "/") });
+  }
+  for (const f of fs.readdirSync(FRAMES)) if (f.startsWith("popup-")) fs.rmSync(path.join(FRAMES, f));
+  await waitFor(() => !document.querySelector(".fund-plan"), { timeout: 10 * 60_000, label: "the plan to be funded" });
+  say("Funded.");
+}
+
+async function actAs(name) {
+  await click(".role-switch button", name);
+  await sleep(1200);
+}
+
+async function cardStatus(name) {
+  return page.evaluate((nm) => {
+    const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm);
+    return card?.querySelector(".badge")?.textContent ?? null;
+  }, name);
+}
+
+async function deliver(name, cueBefore, cueReview, fill) {
+  await actAs(name);
+  await page.evaluate((nm) => {
+    const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm);
+    card?.querySelector("form.deliver")?.scrollIntoView({ block: "center" });
+  }, name);
+  await fill();
+  if (cueBefore) await shot(cueBefore);
+  await page.evaluate((nm) => {
+    const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm);
+    card?.querySelector("form.deliver button[type=submit]")?.click();
+  }, name);
+  say(`${name} submitted; the AI reviewer is checking…`);
+  // A still per new step of the review, then the verdict.
+  let seen = -1;
+  const until = Date.now() + 5 * 60_000;
+  while (Date.now() < until) {
+    const s = await page.evaluate((nm) => {
+      const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm);
+      const trace = card?.querySelectorAll(".notice.reviewing ol.trace li") ?? [];
+      card?.querySelector(".notice.reviewing, .verification")?.scrollIntoView({ block: "center" });
+      return { steps: trace.length, status: card?.querySelector(".badge")?.textContent };
+    }, name);
+    if (s.status === "AI reviewing" && s.steps !== seen && s.steps > 0) {
+      seen = s.steps;
+      await shot(cueReview);
+    }
+    if (s.status && s.status !== "AI reviewing" && s.status !== "funded") break;
+    await sleep(800);
+  }
+  await page.evaluate((nm) => {
+    const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm);
+    card?.querySelector(".verification")?.scrollIntoView({ block: "start" });
+  }, name);
+  await sleep(500);
+  await shot(cueReview);
+  const status = await cardStatus(name);
+  say(`${name}: ${status}`);
+  return status;
+}
+
+try {
+  // 1. Title card, then the home page.
+  await page.setContent(titleCard("Give it a goal and a budget. A team assembles, and everyone is paid when their part is verified.", "PayPal sandbox · demo provider agents"));
+  await shot("intro");
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle0" });
+  await waitFor(() => document.body.innerText.includes("Try the team demo"), { label: "the home page" });
+  await shot("home");
+
+  // 2. The goal.
+  await page.goto(`${BASE}/goals/new`, { waitUntil: "networkidle0" });
+  await click("button.link", "Use example");
+  await shot("goal-form");
+  await click("button[type=submit]", "Assemble a team");
+  await waitFor(() => location.pathname.startsWith("/projects/"), { label: "the project page" });
+  say("Agents are assembling the team…");
+
+  // 3. Live negotiation, assigned to the narration by what the trace says.
+  let declineSeen = false;
+  let courierSeen = false;
+  await followTrace(
+    "trace-start",
+    () => !!document.querySelector(".team-plan") || document.body.innerText.includes("No plan could be assembled"),
+    "the plan",
+    (texts) => {
+      declineSeen ||= texts.some((t) => /Studio Pixel: declines/i.test(t));
+      courierSeen ||= texts.some((t) => /Fietskoerier Demodorp: (offers|declines)/i.test(t));
+      return courierSeen && declineSeen ? "trace-courier" : declineSeen ? "trace-decline" : "trace-start";
+    },
+  );
+  if (await page.evaluate(() => document.body.innerText.includes("No plan could be assembled"))) throw new Error("The agents could not assemble a plan this time; run again.");
+  await scrollTo(".team-plan");
+  await shot("plan");
+  await scrollTo(".rationale");
+  await shot("plan");
+
+  // 4. Approve and fund with one PayPal payment.
+  await click(".approval button.primary", "Approve plan");
+  await waitFor(() => !!document.querySelector(".fund-plan paypal-button"), { label: "the PayPal button" });
+  await scrollTo(".fund-plan", null, "center");
+  await shot("paypal");
+  await payWithPayPal("paypal");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await sleep(600);
+  await shot("funded");
+
+  // 5. The courier in the plan drops out; the planner replans live.
+  const courier = await page.evaluate((names) => [...document.querySelectorAll(".provider-chip")].map((c) => c.textContent).find((t) => names.includes(t)), DELIVERY);
+  if (!courier) throw new Error("No courier in this plan; run again for the dropout scene.");
+  await page.evaluate(() => document.querySelector("details.demo-controls")?.setAttribute("open", ""));
+  await scrollTo("details.demo-controls", null, "center");
+  await shot("dropout");
+  await click("details.demo-controls button", `${courier} drops out`);
+  await followTrace("replan-trace", () => !!document.querySelector(".replan") || document.body.innerText.includes("No plan could be assembled"), "plan v2");
+  await scrollTo(".replan");
+  await shot("plan-v2");
+  await scrollTo(".money-effect", null, "center");
+  await shot("plan-v2");
+  await click(".replan button.primary", "Approve plan v2");
+  await waitFor(() => !!document.querySelector(".fund-plan paypal-button") || !document.querySelector(".fund-plan"), { label: "funding of plan v2" });
+  if (await page.evaluate(() => !!document.querySelector(".fund-plan"))) await payWithPayPal("plan-v2-paid");
+
+  // 6. Deliveries: Daan's pull request (expected: changes requested), the courier's log (expected: verified).
+  const newCourier = await page.evaluate(
+    (names, gone) => [...document.querySelectorAll("section.milestone")].map((c) => c.querySelector(".provider-chip")?.textContent).find((t) => names.includes(t) && t !== gone),
+    DELIVERY,
+    courier,
+  );
+  await deliver("Daan Visser", "deliver-daan", "review-daan", async () => {
+    await page.evaluate((url) => {
+      const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === "Daan Visser");
+      const set = (sel, v) => {
+        const el = card.querySelector(sel);
+        const proto = Object.getPrototypeOf(el);
+        Object.getOwnPropertyDescriptor(proto, "value").set.call(el, v);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+      set("textarea[name=note]", "Order page with PayPal checkout, pickup and lunchtime delivery slots.");
+      set("textarea[name=links]", url);
+    }, PR_URL);
+  });
+  if (newCourier) {
+    await deliver(newCourier, null, "review-courier", async () => {
+      const handle = await page.evaluateHandle((nm) => {
+        const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm);
+        return card.querySelector("input[type=file]");
+      }, newCourier);
+      await handle.uploadFile(EVIDENCE_PDF);
+    });
+    // Payout: the client releases right away instead of waiting out the window.
+    await actAs("Client");
+    if ((await cardStatus(newCourier)) === "verified") {
+      await page.evaluate((nm) => {
+        const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm);
+        [...card.querySelectorAll("button")].find((b) => b.textContent.includes("Release now"))?.click();
+      }, newCourier);
+      await waitFor((nm) => [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm)?.innerText.includes("Paid out"), { label: "the payout", arg: newCourier });
+    }
+    await page.evaluate((nm) => {
+      const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm);
+      card?.querySelector(".settlement, .notice")?.scrollIntoView({ block: "center" });
+    }, newCourier);
+    await sleep(500);
+    await shot("payout");
+  }
+
+  // 7. The record, and the closing card.
+  await page.evaluate(() => {
+    const logs = [...document.querySelectorAll("main > details")];
+    logs.forEach((d) => d.setAttribute("open", ""));
+    logs.at(-1)?.scrollIntoView({ block: "start" });
+  });
+  await sleep(500);
+  await shot("audit");
+  await page.evaluate(() => {
+    const d = [...document.querySelectorAll("details")].find((x) => x.querySelector("summary")?.textContent.includes("why this team"));
+    d?.setAttribute("open", "");
+    d?.scrollIntoView({ block: "start" });
+  });
+  await sleep(500);
+  await shot("offers");
+  await page.setContent(titleCard("Give it a goal and a budget. A team assembles, and everyone is paid when their part is verified.", "github.com/jeroenzwiers/milestone-escrow"));
+  await shot("title");
+} catch (err) {
+  console.error(`\n✘ ${err.message}`);
+  console.error("Stills so far are kept; fix the cause and run again.");
+  process.exitCode = 1;
+} finally {
+  fs.writeFileSync(path.join(OUT, "storyboard.json"), JSON.stringify(board, null, 2) + "\n");
+  const cues = [...new Set(board.map((b) => b.cue))];
+  say(`${board.length} stills for ${cues.length} cues: ${cues.join(", ")}`);
+  await browser.close();
+}
