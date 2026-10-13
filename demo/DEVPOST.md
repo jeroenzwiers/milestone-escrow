@@ -55,7 +55,7 @@ It also works one-to-one: paste a quote or email, and the AI turns it into miles
 ### Accomplishments that we're proud of
 
 - In a live run, the planner chose the more expensive courier because the cheaper one only rides on days with at least 10 orders, which is risky in a launch week. When that courier then dropped out, it offered the other courier more money to drop the minimum, was refused, and instead added a pickup option to the developer's scope so quiet days were still covered. It stayed within the budget.
-- The money trail of a replanned team works in the PayPal sandbox: one payment for the plan, a refund for the replaced provider and a second payment for the new one. Payouts, refunds and splits were run against the sandbox as well, and paying each provider on its own account is covered by tests.
+- The whole team money flow works in the PayPal sandbox. One payment funded a three-provider plan and turned into three payouts to three different sandbox accounts plus a partial refund to the client, all from that one capture. In a replanned team, the replaced provider's share was refunded and the new provider funded with a second payment.
 - The review agent approves a real pull request and live site, and rejects a real pull request that misses the agreed confirmation email, explaining exactly what is missing.
 
 ### What we learned

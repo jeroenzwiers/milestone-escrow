@@ -85,6 +85,7 @@ Requires Node 20+, a PayPal developer account and an Anthropic API key.
    npm install
    npm run sandbox:check        # credentials + Payouts permission
    npm run sandbox:e2e          # pay → capture → 70% payout → 30% refund against the real sandbox
+   npm run sandbox:team-e2e     # one payment for a team plan → payouts to three providers' own accounts + a refund
    npm test                     # 70 unit tests, no accounts needed
    npm run test:pg              # the same tests against Postgres (PGlite, in-process)
    npm run dev                  # http://localhost:3000
