@@ -49,11 +49,11 @@
   },
   {
     "order": 7,
-    "key": "ab486546",
+    "key": "7801ec39",
     "scene": 3,
     "cue": "plan",
-    "text": "Fixed rules check it: within budget, every price exactly what the provider agreed to. Two hundred and ninety of three hundred euros.",
-    "file": "ab486546.mp3"
+    "text": "Fixed rules check it: within budget, and every price exactly what the provider agreed to.",
+    "file": "7801ec39.mp3"
   },
   {
     "order": 8,
@@ -81,19 +81,19 @@
   },
   {
     "order": 11,
-    "key": "ef8d4d71",
+    "key": "7a90a8f3",
     "scene": 5,
     "cue": "replan-trace",
-    "text": "The planner replans. It offers the other courier more to drop the minimum, gets a no, and adds a pickup option instead, so quiet days are still covered.",
-    "file": "ef8d4d71.mp3"
+    "text": "The planner replans. It asks the other courier to drop its minimum, gets a no, and adjusts the plan around it.",
+    "file": "7a90a8f3.mp3"
   },
   {
     "order": 12,
-    "key": "2a5a5078",
+    "key": "98e6d81e",
     "scene": 5,
     "cue": "plan-v2",
-    "text": "Sanne sees exactly what changes: seventy-five euros back for the replaced work, a small payment for the new courier. Nothing moves until she approves.",
-    "file": "2a5a5078.mp3"
+    "text": "Sanne sees exactly what changes, what comes back to her and what is new to pay. Nothing moves until she approves.",
+    "file": "98e6d81e.mp3"
   },
   {
     "order": 13,
@@ -105,11 +105,11 @@
   },
   {
     "order": 14,
-    "key": "8d5e1ae9",
+    "key": "d2554e22",
     "scene": 6,
     "cue": "review-daan",
-    "text": "The reviewer opens Daan's pull request, finds PayPal checkout and pickup slots, but no confirmation email. His money stays in escrow, and he gets concrete feedback.",
-    "file": "8d5e1ae9.mp3"
+    "text": "The reviewer opens Daan's pull request and checks it against every criterion. The confirmation email is missing, so his money stays in escrow, and he gets concrete feedback.",
+    "file": "d2554e22.mp3"
   },
   {
     "order": 15,

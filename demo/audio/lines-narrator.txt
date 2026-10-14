@@ -10,7 +10,7 @@ The agency declines: it's booked for two weeks.
 
 The cheap courier only rides on days with ten or more orders, which is risky in a launch week. The planner weighs that, picks the courier without a minimum, and submits a plan.
 
-Fixed rules check it: within budget, every price exactly what the provider agreed to. Two hundred and ninety of three hundred euros.
+Fixed rules check it: within budget, and every price exactly what the provider agreed to.
 
 Sanne approves and pays once, with PayPal.
 
@@ -18,13 +18,13 @@ The money sits in escrow. Nobody is paid until their part is verified.
 
 Then the courier drops out.
 
-The planner replans. It offers the other courier more to drop the minimum, gets a no, and adds a pickup option instead, so quiet days are still covered.
+The planner replans. It asks the other courier to drop its minimum, gets a no, and adjusts the plan around it.
 
-Sanne sees exactly what changes: seventy-five euros back for the replaced work, a small payment for the new courier. Nothing moves until she approves.
+Sanne sees exactly what changes, what comes back to her and what is new to pay. Nothing moves until she approves.
 
 Each provider delivers.
 
-The reviewer opens Daan's pull request, finds PayPal checkout and pickup slots, but no confirmation email. His money stays in escrow, and he gets concrete feedback.
+The reviewer opens Daan's pull request and checks it against every criterion. The confirmation email is missing, so his money stays in escrow, and he gets concrete feedback.
 
 The courier's delivery log checks out, criterion by criterion.
 

@@ -144,10 +144,11 @@ export function ReplanProposal({
   onApprove: () => void;
 }) {
   const name = (id: string) => providers.find((p) => p.id === id)?.name ?? id;
-  const keptIds = new Set(Object.values(pending.keep));
+  const amend = pending.amend ?? {};
+  const keptIds = new Set([...Object.values(pending.keep), ...Object.values(amend)]);
   const open = project.milestones.filter((m) => m.replacedIn === undefined && ["draft", "awaiting_funding", "funded"].includes(m.status));
   const replaced = open.filter((m) => !keptIds.has(m.id));
-  const added = pending.milestones.filter((m) => !pending.keep[m.key]);
+  const added = pending.milestones.filter((m) => !pending.keep[m.key] && !amend[m.key]);
   const refund = replaced.filter((m) => m.status === "funded").reduce((n, m) => n + m.amountCents, 0);
   const fresh = added.reduce((n, m) => n + m.amountCents, 0);
   const locked = project.milestones.filter((m) => m.replacedIn === undefined && !open.includes(m)).reduce((n, m) => n + m.amountCents, 0);

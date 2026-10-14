@@ -103,6 +103,31 @@ describe("replanning after a dropout", () => {
     assert.equal(after.milestones.find((m) => m.title === "Bike delivery")!.status, "funded");
   });
 
+  it("amends an open milestone whose scope changes at the same price, without moving money", async () => {
+    await updateProject(projectId, (p) => {
+      p.plan!.pending = {
+        version: 2, reason: "BezorgBende dropped out", rationale: "v2", leftoverPolicy: "", changes: [], offers: [],
+        milestones: [
+          { key: "order", title: "Order page with pickup option", providerId: "daan", amountCents: 18_000, criteria: ["Pickup option"], evidence: "PR", dependsOn: [] },
+          { key: "bike", title: "Bike delivery", providerId: "fietskoerier", amountCents: 5_000, criteria: ["c"], evidence: "", dependsOn: ["order"] },
+        ],
+        keep: {},
+        amend: { order: ms[1].id },
+      };
+    });
+    const effect = replanEffect((await getProject(projectId))!.milestones, (await getProject(projectId))!.plan!.pending!);
+    assert.equal(effect.refundCents, 7_500, "only the dropped courier's share comes back");
+    assert.equal(effect.newFundingCents, 5_000);
+    const calls = fakePayPal();
+    const p = await approveReplan(projectId);
+    const order = p.milestones.find((m) => m.id === ms[1].id)!;
+    assert.equal(order.status, "funded", "the amended milestone keeps its funding");
+    assert.equal(order.title, "Order page with pickup option");
+    assert.deepEqual(order.criteria, ["Pickup option"]);
+    assert.equal(calls.filter((c) => c.path.endsWith("/refund")).length, 1, "no refund for the amended milestone");
+    assert.deepEqual(p.milestones.find((m) => m.title === "Bike delivery")!.dependsOn, [ms[1].id]);
+  });
+
   it("does not approve when there is no pending plan", async () => {
     await assert.rejects(approveReplan(projectId), /no new plan/);
   });

@@ -46,10 +46,19 @@ export async function runReplanning(projectId: string, dropped: string) {
       onTrace: (t) => updateProject(projectId, (p) => void p.plan!.trace.push(t)).then(() => {}),
     });
     // An open milestone the planner left unchanged (same provider, title and price) is kept as is.
+    // One with the same provider and price but a changed scope is amended in place, so money that
+    // is already in escrow for it stays there instead of being refunded and paid again.
     const keep: Record<string, string> = {};
+    const amend: Record<string, string> = {};
+    const taken = () => new Set([...Object.values(keep), ...Object.values(amend)]);
     for (const pm of result.milestones) {
-      const same = open.find((m) => !Object.values(keep).includes(m.id) && m.providerId === pm.providerId && m.amountCents === pm.amountCents && m.title === pm.title);
+      const same = open.find((m) => !taken().has(m.id) && m.providerId === pm.providerId && m.amountCents === pm.amountCents && m.title === pm.title);
       if (same) keep[pm.key] = same.id;
+    }
+    for (const pm of result.milestones) {
+      if (keep[pm.key]) continue;
+      const similar = open.find((m) => !taken().has(m.id) && m.providerId === pm.providerId && m.amountCents === pm.amountCents);
+      if (similar) amend[pm.key] = similar.id;
     }
     const pending: PendingPlan = {
       version: project.plan.version + 1,
@@ -60,6 +69,7 @@ export async function runReplanning(projectId: string, dropped: string) {
       changes: result.changes,
       offers: result.offers,
       keep,
+      amend,
     };
     await updateProject(projectId, (p) => {
       p.plan!.pending = pending;
@@ -77,12 +87,15 @@ export async function runReplanning(projectId: string, dropped: string) {
 
 /** What approving the pending plan would do with money, for the UI and the approval itself. */
 export function replanEffect(milestones: Milestone[], pending: PendingPlan) {
-  const keptIds = new Set(Object.values(pending.keep));
+  const amend = pending.amend ?? {};
+  const keptIds = new Set([...Object.values(pending.keep), ...Object.values(amend)]);
   const replaced = openMilestones(milestones).filter((m) => !keptIds.has(m.id));
-  const added = pending.milestones.filter((pm) => !pending.keep[pm.key]);
+  const added = pending.milestones.filter((pm) => !pending.keep[pm.key] && !amend[pm.key]);
+  const amended = pending.milestones.filter((pm) => amend[pm.key]);
   return {
     replaced,
     added,
+    amended,
     refundCents: replaced.filter((m) => m.status === "funded").reduce((n, m) => n + m.amountCents, 0),
     newFundingCents: added.reduce((n, m) => n + m.amountCents, 0),
   };
@@ -93,7 +106,7 @@ export async function approveReplan(projectId: string) {
   const project = await getProject(projectId);
   const pending = project?.plan?.pending;
   if (!project || !pending) throw new EscrowError("There is no new plan to approve");
-  const { replaced, added } = replanEffect(project.milestones, pending);
+  const { replaced, added, amended } = replanEffect(project.milestones, pending);
 
   // Money first: each refund is idempotent, so a retry after a partial failure is safe.
   for (const m of replaced.filter((x) => x.status === "funded")) {
@@ -102,12 +115,24 @@ export async function approveReplan(projectId: string) {
 
   const fresh = (await getProject(projectId))!;
   const replacedIds = new Set(replaced.map((m) => m.id));
-  const ids: Record<string, string> = { ...pending.keep };
+  const ids: Record<string, string> = { ...pending.keep, ...(pending.amend ?? {}) };
+  const amendById = new Map(amended.map((pm) => [pending.amend![pm.key], pm]));
   for (const pm of added) ids[pm.key] = newId("m");
 
   const next: Milestone[] = [];
   for (const m of fresh.milestones) {
-    if (!replacedIds.has(m.id)) next.push(m);
+    const change = amendById.get(m.id);
+    if (change) {
+      // Same provider, same price, new scope: update the description, keep the money where it is.
+      next.push({
+        ...m,
+        title: change.title,
+        criteria: change.criteria,
+        evidence: change.evidence,
+        dependsOn: change.dependsOn.map((k) => ids[k]).filter(Boolean),
+        events: [...m.events, { at: new Date().toISOString(), type: "amended_in_plan", detail: `v${pending.version}` }],
+      });
+    } else if (!replacedIds.has(m.id)) next.push(m);
     else if (m.status === "refunded") next.push({ ...m, replacedIn: pending.version }); // keep the money trail visible
     // replaced milestones that were never funded simply disappear
   }
@@ -138,6 +163,6 @@ export async function approveReplan(projectId: string) {
     plan.offers = pending.offers;
     plan.pending = undefined;
     plan.orderId = undefined;
-    logEvent(p, "plan_change_approved", `v${pending.version}: ${replaced.length} replaced, ${added.length} added`);
+    logEvent(p, "plan_change_approved", `v${pending.version}: ${replaced.length} replaced, ${amended.length} amended, ${added.length} added`);
   });
 }

@@ -99,6 +99,8 @@ export type PendingPlan = {
   offers: Offer[];
   /** Planner key -> id of an existing open milestone that stays unchanged. */
   keep: Record<string, string>;
+  /** Planner key -> id of an open milestone with the same provider and price whose scope changes; its money stays put. */
+  amend?: Record<string, string>;
 };
 
 export type Milestone = {

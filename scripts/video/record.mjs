@@ -110,7 +110,10 @@ async function followTrace(cue, doneFn, label, cueFor) {
     if (state.count !== seen && state.count > 0) {
       seen = state.count;
       await sleep(150);
-      await shot(cueFor ? cueFor(state.texts) : cue);
+      const cues = [cueFor ? cueFor(state.texts) : cue].flat();
+      await shot(cues[0]);
+      // One still can belong to two lines when both moments arrived in the same refresh.
+      for (const extra of cues.slice(1)) board.push({ cue: extra, file: board.at(-1).file });
     }
     if (await page.evaluate(doneFn)) return;
     await sleep(700);
@@ -165,6 +168,8 @@ async function cardStatus(name) {
 
 async function deliver(name, cueBefore, cueReview, fill) {
   await actAs(name);
+  const before = await cardStatus(name);
+  if (before !== "funded") throw new Error(`${name}'s milestone is "${before}", not funded; nothing to deliver`);
   await page.evaluate((nm) => {
     const card = [...document.querySelectorAll("section.milestone")].find((c) => c.querySelector(".provider-chip")?.textContent === nm);
     card?.querySelector("form.deliver")?.scrollIntoView({ block: "center" });
@@ -228,9 +233,15 @@ try {
     () => !!document.querySelector(".team-plan") || document.body.innerText.includes("No plan could be assembled"),
     "the plan",
     (texts) => {
-      declineSeen ||= texts.some((t) => /Studio Pixel: declines/i.test(t));
-      courierSeen ||= texts.some((t) => /Fietskoerier Demodorp: (offers|declines)/i.test(t));
-      return courierSeen && declineSeen ? "trace-courier" : declineSeen ? "trace-decline" : "trace-start";
+      const decline = texts.some((t) => /Studio Pixel: declines/i.test(t));
+      const courier = texts.some((t) => /Fietskoerier Demodorp: (offers|declines)/i.test(t));
+      const cues = [];
+      if (decline && !declineSeen) cues.push("trace-decline");
+      if (courier && !courierSeen && decline) cues.push("trace-courier");
+      declineSeen ||= decline;
+      courierSeen ||= courier && decline;
+      if (cues.length) return cues;
+      return courierSeen ? "trace-courier" : declineSeen ? "trace-decline" : "trace-start";
     },
   );
   if (await page.evaluate(() => document.body.innerText.includes("No plan could be assembled"))) throw new Error("The agents could not assemble a plan this time; run again.");
@@ -262,8 +273,13 @@ try {
   await scrollTo(".money-effect", null, "center");
   await shot("plan-v2");
   await click(".replan button.primary", "Approve plan v2");
-  await waitFor(() => !!document.querySelector(".fund-plan paypal-button") || !document.querySelector(".fund-plan"), { label: "funding of plan v2" });
-  if (await page.evaluate(() => !!document.querySelector(".fund-plan"))) await payWithPayPal("plan-v2-paid");
+  await waitFor(() => !document.querySelector(".replan"), { label: "plan v2 to be applied" });
+  // New or changed work may need funding; give the page time to show the PayPal button.
+  const needsFunding = await waitFor(
+    () => (document.querySelector(".fund-plan paypal-button") ? "pay" : [...document.querySelectorAll("section.milestone .badge")].every((b) => b.textContent !== "not funded") ? "funded" : null),
+    { label: "plan v2 funding state", timeout: 60_000 },
+  );
+  if (needsFunding === "pay") await payWithPayPal("plan-v2-paid");
 
   // 6. Deliveries: Daan's pull request (expected: changes requested), the courier's log (expected: verified).
   const newCourier = await page.evaluate(
