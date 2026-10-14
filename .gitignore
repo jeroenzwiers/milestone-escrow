@@ -19,3 +19,4 @@ demo/video/*.txt
 demo/video/*.m4a
 demo/video/*.mp4
 demo/audio/samples/
+demo/video/storyboard.json

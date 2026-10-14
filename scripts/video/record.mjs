@@ -38,7 +38,8 @@ const browser = await puppeteer.launch({
   executablePath: CHROME,
   headless: false,
   defaultViewport: null,
-  args: ["--window-size=1300,900", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check"],
+  // Window sized to the captured viewport plus browser chrome, so nothing is rescaled between stills.
+  args: ["--window-size=1280,860", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check"],
 });
 const [page] = await browser.pages();
 await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1.5 });
@@ -47,7 +48,9 @@ const board = []; // { cue, file }
 let n = 0;
 async function shot(cue, target = page) {
   const file = path.join(FRAMES, `f${String(n++).padStart(4, "0")}.jpg`);
-  await target.screenshot({ path: file, type: "jpeg", quality: 92 });
+  // Only the visible viewport: capturing beyond it makes Chrome resize the page for every
+  // still, which shows on screen as the page jumping between sizes.
+  await target.screenshot({ path: file, type: "jpeg", quality: 92, captureBeyondViewport: false });
   board.push({ cue, file: path.relative(OUT, file).replaceAll("\\", "/") });
 }
 
@@ -131,13 +134,18 @@ async function payWithPayPal(cue) {
   const popup = await Promise.race([popupPromise, sleep(20_000).then(() => null)]);
   say("PayPal window open: log in with the CLIENT sandbox account (sb-ychkk…) and pay.");
   let last = null;
+  let lastUrl = "";
   const until = Date.now() + 10 * 60_000;
   while (Date.now() < until) {
-    if (popup && !popup.isClosed()) {
+    // A still of the PayPal window only when it moves to a new page, so the person
+    // logging in isn't disturbed; the last one before it closes is the pay screen.
+    if (popup && !popup.isClosed() && popup.url() !== lastUrl) {
+      await sleep(1200); // let the new page render
       const file = path.join(FRAMES, `popup-${n}.jpg`);
       try {
-        await popup.screenshot({ path: file, type: "jpeg", quality: 92 });
+        await popup.screenshot({ path: file, type: "jpeg", quality: 92, captureBeyondViewport: false });
         last = file;
+        lastUrl = popup.url();
       } catch {}
     }
     const funded = await page.evaluate(() => !document.querySelector(".fund-plan") && !!document.querySelector(".milestone"));
