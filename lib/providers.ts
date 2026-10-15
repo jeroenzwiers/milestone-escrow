@@ -53,7 +53,7 @@ export const PROVIDERS: Provider[] = [
     kind: "delivery",
     publicProfile: "Bike courier for local shops and restaurants in Demodorp.",
     privateTerms:
-      "Setup fee to connect a shop for lunch delivery: €50 for the first week, then per delivery. Only delivers between 11:00 and 13:00, within 3 km, and only on days with at least 10 orders. Needs the order list per delivery round by 10:30.",
+      "Setup fee to connect a shop for lunch delivery: €50 for the first week, then €3.50 per delivery, invoiced weekly. Only delivers between 11:00 and 13:00, within 3 km, and only on days with at least 10 orders. Needs the order list per delivery round by 10:30.",
     floorCents: 5_000,
     emailEnv: "PROVIDER_FIETSKOERIER_EMAIL",
   },
