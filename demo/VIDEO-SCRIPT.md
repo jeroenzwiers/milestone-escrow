@@ -68,7 +68,7 @@ Daarna *Acting as* → **Fietskoerier Demodorp**: upload `demo/evidence/fietskoe
 - [ ] **Neem lokaal op** (`npm run build` en `npm start`): sneller dan de gratis online server, en zonder inlogvenster. Zet in `.env.local` tijdelijk `CHALLENGE_WINDOW_MINUTES=1`.
 - [ ] **Doe eerst een paar proefruns** van scène 2–5 en kies een run waarin het verhaal zit: de agency weigert, de koerier met het minimum valt af, BezorgBende komt in het plan, en bij de herplanning wordt de andere koerier gevraagd. Een run die anders loopt is niet fout, maar dan moet de voice-over mee.
 - [ ] Ingelogd (of wachtwoord bij de hand) in het PayPal-sandbox-**klant**account `sb-ychkk…`.
-- [ ] Browser: andere tabbladen en de bladwijzerbalk weg, zoom 110–125%, venster ± 1280×800.
+- [ ] **Opnemen gaat automatisch**, zoals bij Premortem: `node scripts/video/record.mjs` draait Chrome onzichtbaar (headless) en maakt per voice-over-regel stills. Bij de twee betalingen opent de recorder de PayPal-link in je eigen browser; daar betaal je, en de recorder wacht tot het geld binnen is. Daarna `python scripts/video/mux.py`.
 - [ ] Geen muziek met auteursrecht (dat verbieden de regels): geen muziek, of een rechtenvrij nummer.
 - [ ] Laat in beeld duidelijk zijn dat het sandbox is (de PayPal-sandbox-banner mag zichtbaar zijn) en dat de uitvoerders demo-agents zijn.
 - [ ] Upload naar YouTube als **openbaar** (de regels eisen "publicly visible") en zet de link in de inzending.

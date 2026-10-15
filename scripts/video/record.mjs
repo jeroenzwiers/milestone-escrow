@@ -8,12 +8,16 @@
 // gives each line exactly the length of its clip and spreads that line's stills over
 // it. The waiting disappears; everything shown really happened.
 //
+// As in the Premortem recorder, Chrome runs headless (HEADFUL=1 shows it), so nothing
+// moves on screen while it records.
+//
 //   npm run build && npm start          # the app on http://localhost:3000 (set CHALLENGE_WINDOW_MINUTES=1)
 //   node scripts/video/record.mjs       # frames + demo/video/storyboard.json
 //   python scripts/video/mux.py         # the finished mp4
 //
-// The two PayPal payments are made by hand in the PayPal window with the client
-// sandbox account; the recorder waits for them.
+// The two PayPal payments are made by hand: the recorder opens the PayPal link in your
+// own browser, you pay with the client sandbox account, and the recorder waits for it.
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import puppeteer from "puppeteer-core";
@@ -36,7 +40,7 @@ const say = (msg) => console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
 // so small text survives YouTube (same choice as the Study Coach video).
 const browser = await puppeteer.launch({
   executablePath: CHROME,
-  headless: false,
+  headless: process.env.HEADFUL ? false : true,
   defaultViewport: null,
   // Window sized to the captured viewport plus browser chrome, so nothing is rescaled between stills.
   args: ["--window-size=1280,860", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check"],
@@ -124,41 +128,52 @@ async function followTrace(cue, doneFn, label, cueFor) {
   throw new Error(`Timed out waiting for ${label}`);
 }
 
-// PayPal opens in its own window. Keep stills of it while the user logs in and pays,
-// use the last one before it closes (the pay screen), and wait until the plan is funded.
+// The client's API call from inside the page, with the link token this browser holds.
+function clientCall(apiPath, body) {
+  return page.evaluate(
+    async (p, b) => {
+      const id = location.pathname.split("/")[2];
+      const token = JSON.parse(localStorage.getItem(`escrow:tokens:${id}`) ?? "{}").client;
+      const res = await fetch(p.replace(":id", id), {
+        method: "POST",
+        headers: { "x-escrow-token": token, "Content-Type": "application/json" },
+        body: JSON.stringify(b),
+      });
+      return { ok: res.ok, json: await res.json().catch(() => ({})) };
+    },
+    apiPath,
+    body,
+  );
+}
+
+// The same PayPal order the button would open, paid through its approve link in your own
+// browser: the recorder keeps one still of the PayPal page and waits until the money is in.
 async function payWithPayPal(cue) {
-  const popupPromise = new Promise((resolve) => browser.once("targetcreated", async (t) => resolve(await t.page())));
-  // A real (trusted) mouse click: Chrome blocks the PayPal window for a scripted one.
-  await scrollTo(".fund-plan", null, "center");
-  await page.click(".fund-plan paypal-button");
-  const popup = await Promise.race([popupPromise, sleep(20_000).then(() => null)]);
-  say("PayPal window open: log in with the CLIENT sandbox account (sb-ychkk…) and pay.");
-  let last = null;
-  let lastUrl = "";
-  const until = Date.now() + 10 * 60_000;
-  while (Date.now() < until) {
-    // A still of the PayPal window only when it moves to a new page, so the person
-    // logging in isn't disturbed; the last one before it closes is the pay screen.
-    if (popup && !popup.isClosed() && popup.url() !== lastUrl) {
-      await sleep(1200); // let the new page render
-      const file = path.join(FRAMES, `popup-${n}.jpg`);
-      try {
-        await popup.screenshot({ path: file, type: "jpeg", quality: 92, captureBeyondViewport: false });
-        last = file;
-        lastUrl = popup.url();
-      } catch {}
-    }
-    const funded = await page.evaluate(() => !document.querySelector(".fund-plan") && !!document.querySelector(".milestone"));
-    if (funded) break;
-    await sleep(1500);
+  const { ok, json } = await clientCall("/api/projects/:id/fund", { returnUrl: `${BASE}/` });
+  if (!ok || !json.approveUrl) throw new Error(`Could not create the PayPal order: ${json.error ?? "no approve link"}`);
+
+  const paypal = await browser.newPage();
+  await paypal.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1.5 });
+  await paypal.goto(json.approveUrl, { waitUntil: "networkidle2", timeout: 60_000 }).catch(() => {});
+  await sleep(2500);
+  await shot(cue, paypal);
+  await paypal.close();
+
+  // Opens in your default browser; rundll32 takes the URL as one argument, & and all.
+  spawn("rundll32", ["url.dll,FileProtocolHandler", json.approveUrl], { detached: true, stdio: "ignore" }).unref();
+  say("PayPal opened in your browser: log in with the CLIENT sandbox account (sb-ychkk…) and pay.");
+  say(`If it did not open: ${json.approveUrl}`);
+
+  // Capturing fails until the payment is approved; try every few seconds.
+  const until = Date.now() + 15 * 60_000;
+  for (;;) {
+    const r = await clientCall("/api/projects/:id/fund/capture", { orderId: json.orderId });
+    if (r.ok) break;
+    if (Date.now() > until) throw new Error(`Payment not received: ${r.json.error ?? "timeout"}`);
+    await sleep(4000);
   }
-  if (last) {
-    const file = path.join(FRAMES, `f${String(n++).padStart(4, "0")}.jpg`);
-    fs.renameSync(last, file);
-    board.push({ cue, file: path.relative(OUT, file).replaceAll("\\", "/") });
-  }
-  for (const f of fs.readdirSync(FRAMES)) if (f.startsWith("popup-")) fs.rmSync(path.join(FRAMES, f));
-  await waitFor(() => !document.querySelector(".fund-plan"), { timeout: 10 * 60_000, label: "the plan to be funded" });
+  await page.reload({ waitUntil: "networkidle0" });
+  await waitFor(() => !document.querySelector(".fund-plan") && !!document.querySelector(".milestone"), { label: "the plan to be funded" });
   say("Funded.");
 }
 
@@ -260,7 +275,7 @@ try {
 
   // 4. Approve and fund with one PayPal payment.
   await click(".approval button.primary", "Approve plan");
-  await waitFor(() => !!document.querySelector(".fund-plan paypal-button"), { label: "the PayPal button" });
+  await waitFor(() => !!document.querySelector(".fund-plan"), { label: "the PayPal button" });
   await scrollTo(".fund-plan", null, "center");
   await shot("paypal");
   await payWithPayPal("paypal");
@@ -284,7 +299,7 @@ try {
   await waitFor(() => !document.querySelector(".replan"), { label: "plan v2 to be applied" });
   // New or changed work may need funding; give the page time to show the PayPal button.
   const needsFunding = await waitFor(
-    () => (document.querySelector(".fund-plan paypal-button") ? "pay" : [...document.querySelectorAll("section.milestone .badge")].every((b) => b.textContent !== "not funded") ? "funded" : null),
+    () => (document.querySelector(".fund-plan") ? "pay" : [...document.querySelectorAll("section.milestone .badge")].every((b) => b.textContent !== "not funded") ? "funded" : null),
     { label: "plan v2 funding state", timeout: 60_000 },
   );
   if (needsFunding === "pay") await payWithPayPal("plan-v2-paid");

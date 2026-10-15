@@ -78,7 +78,7 @@ export function startFunding(id: string, urls?: { returnUrl: string; cancelUrl: 
 }
 
 /** Team mode: the client funds every unfunded milestone of the approved plan with one PayPal order. */
-export function startPlanFunding(projectId: string) {
+export function startPlanFunding(projectId: string, urls?: { returnUrl: string; cancelUrl: string }) {
   return withLock(`p:${projectId}`, async () => {
     const project = await getProject(projectId);
     if (!project) throw new EscrowError("Project not found", 404);
@@ -92,6 +92,7 @@ export function startPlanFunding(projectId: string) {
       description: `${project.title}: plan v${project.plan?.version ?? 1}`,
       amountCents: total,
       currency: project.currency,
+      ...urls,
     });
     await updateProject(projectId, (p, ms) => {
       p.plan!.orderId = order.id;
