@@ -22,6 +22,8 @@ Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). **T
 
 ## Try it
 
+**Demo video (2 min):** <https://youtu.be/pW8FYUzBmHI>
+
 **Hosted demo:** <https://milestone-escrow.onrender.com>. The site is password protected so bots can't spend the AI budget; the login is in the Devpost testing instructions. The free instance sleeps when idle, so the first page can take up to a minute.
 
 1. **Try the team demo** gives you your own copy of the bakery goal with the team the agents assembled for it in an earlier, recorded run (labelled as such). Approve it, fund it with the client sandbox account, then open *Demo: let a provider drop out* and watch the planner repair the plan live.

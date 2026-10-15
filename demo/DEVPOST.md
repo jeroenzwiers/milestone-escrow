@@ -102,4 +102,4 @@ email `<client sandbox email>`, password `<client sandbox password>`
 
 - Code: https://github.com/jeroenzwiers/milestone-escrow
 - Demo deliverable (fictional bakery webshop): https://github.com/jeroenzwiers/gouden-korst-webshop
-- Video: `<YouTube link>`
+- Video: https://youtu.be/pW8FYUzBmHI
